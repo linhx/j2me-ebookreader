@@ -33,7 +33,6 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
     private Vector entries = new Vector(); // names (dirs end with '/')
 
     protected void startApp() {
-        Ui.keepAwake();
         if (display != null) return;
         display = Display.getDisplay(this);
         reader = new ReaderCanvas(this);

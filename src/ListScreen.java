@@ -64,7 +64,7 @@ public class ListScreen extends Canvas {
         if (first < 0) first = 0;
     }
 
-    protected void showNotify() { ensureVisible(); Ui.keepAwake(); }
+    protected void showNotify() { ensureVisible(); }
 
     protected void paint(Graphics g) {
         int w = getWidth(), h = getHeight();
@@ -107,10 +107,9 @@ public class ListScreen extends Canvas {
         }
     }
 
-    protected void keyPressed(int code) { Ui.keepAwake(); handle(code); }
+    protected void keyPressed(int code) { handle(code); }
 
     protected void keyRepeated(int code) {
-        Ui.keepAwake();
         int a = action(code);
         if (a == UP || a == DOWN || a == LEFT || a == RIGHT
                 || code == KEY_NUM2 || code == KEY_NUM8 || code == KEY_NUM4 || code == KEY_NUM6)

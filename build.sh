@@ -28,7 +28,7 @@ fi
 VERSION=${VERSION:-1.0.0}
 VERSION=${VERSION#v}
 LIB=$PWD/lib
-BOOT=$LIB/microemu-cldc-2.0.4.jar:$LIB/microemu-midp-2.0.4.jar:$LIB/microemu-jsr-75-2.0.4.jar:$LIB/nokiaui-stub.jar
+BOOT=$LIB/microemu-cldc-2.0.4.jar:$LIB/microemu-midp-2.0.4.jar:$LIB/microemu-jsr-75-2.0.4.jar
 rm -rf build && mkdir -p build/classes build/pre build/jar dist
 $JDK8/bin/javac -source 1.3 -target 1.3 -encoding UTF-8 -g:none -bootclasspath $BOOT:$RT_JAR -d build/classes src/*.java > build/javac.log 2>&1 || { cat build/javac.log; exit 1; }
 # Preverify (CLDC StackMap) + shrink-less pass with ProGuard

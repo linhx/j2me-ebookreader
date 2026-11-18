@@ -19,7 +19,6 @@
   - Tự cài đặt bộ giải nén **streaming DEFLATE** (`Inflate`) với cửa sổ trượt cố định 32 KB.
   - Đọc và lọc thẻ HTML/XML (`content.opf`, `toc.ncx`, `nav.xhtml`, chương XHTML) trực tiếp trên luồng `InputStream`, không nạp toàn bộ mảng byte giải nén hay chuỗi HTML thô vào RAM.
   - Tự động chia nhỏ chương siêu dài theo từng phần 32.000 ký tự và đọc file HTML/TXT rời theo từng cửa sổ 36 KB.
-- **Giữ sáng màn hình 1 phút:** Sử dụng Nokia UI API (`DeviceControl.setLights`) để duy trì đèn nền màn hình 60 giây sau mỗi thao tác phím, tránh việc màn hình S40 tắt quá nhanh khi đang đọc.
 - **Giảm hỏi quyền đọc file trên Nokia S40:** Giữ nguyên một kết nối `FileConnection` cho mỗi cuốn sách trong suốt quá trình đọc.
 - **Nhớ vị trí đọc (RMS):** Lưu chương, phần và dòng đang đọc cho từng cuốn sách.
 
@@ -38,7 +37,7 @@ java -Dfile.encoding=ISO_8859_1 -jar /mnt/data/apps/freej2me-plus/build/freej2me
 # Render lại bộ ảnh showcase (240x320) vào thư mục docs/
 ./tools/capture-showcase.sh
 ```
-*(Lưu ý: `lib/` đã chứa sẵn stub CLDC 1.1 / MIDP 2.0 / JSR-75 / Nokia UI và ProGuard để preverify bytecode).*
+*(Lưu ý: `lib/` đã chứa sẵn stub CLDC 1.1 / MIDP 2.0 / JSR-75 của MicroEmu và ProGuard để preverify bytecode).*
 
 ## Phím điều khiển khi đọc
 | Phím | Chức năng |

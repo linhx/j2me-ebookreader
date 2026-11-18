@@ -425,7 +425,6 @@ public class ReaderCanvas extends Canvas {
 
     // ------------------------------------------------------------ input
     protected void keyPressed(final int code) {
-        Ui.keepAwake();
         if (heldKey == code) return;
         handle(code, false);
         int a = navAction(code);
@@ -436,7 +435,6 @@ public class ReaderCanvas extends Canvas {
                 public void run() {
                     try { Thread.sleep(320); } catch (InterruptedException e) { return; }
                     while (heldKey == code && heldGen == hg && !busy) {
-                        Ui.keepAwake();
                         if (!stepHold(code)) break;
                         repaint();
                         serviceRepaints();
@@ -449,7 +447,6 @@ public class ReaderCanvas extends Canvas {
     }
 
     protected void keyRepeated(int code) {
-        Ui.keepAwake();
     }
 
     private int action(int code) {
@@ -683,6 +680,5 @@ public class ReaderCanvas extends Canvas {
 
     protected void showNotify() {
         metrics();
-        Ui.keepAwake();
     }
 }

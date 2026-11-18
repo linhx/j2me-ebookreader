@@ -5,60 +5,6 @@ import javax.microedition.lcdui.Graphics;
 public class Ui {
     public static final int RED1 = 0xE2262D, RED2 = 0x9C1217;
 
-    private static final Object LIGHT_LOCK = new Object();
-    private static volatile long lightUntil = 0;
-    private static volatile long lastPing = 0;
-    private static boolean lightThreadStarted = false;
-    private static boolean hasNokiaLight = true;
-
-    /** Keeps the screen backlight on for 1 minute (~60 seconds) after the last interaction. */
-    public static void keepAwake() {
-        long now = System.currentTimeMillis();
-        // Nokia S40 default timeout is ~15s; refreshing every 4s for 48s keeps screen lit ~60s total.
-        lightUntil = now + 48000L;
-        if (now - lastPing < 3000L && lightThreadStarted) return;
-        lastPing = now;
-        pingLight();
-        synchronized (LIGHT_LOCK) {
-            if (!lightThreadStarted) {
-                lightThreadStarted = true;
-                new Thread(new Runnable() {
-                    public void run() {
-                        for (;;) {
-                            try {
-                                synchronized (LIGHT_LOCK) {
-                                    long rem = lightUntil - System.currentTimeMillis();
-                                    if (rem <= 0) {
-                                        LIGHT_LOCK.wait();
-                                        continue;
-                                    }
-                                    LIGHT_LOCK.wait(Math.min(4000L, rem));
-                                }
-                                long t = System.currentTimeMillis();
-                                if (t < lightUntil) {
-                                    lastPing = t;
-                                    pingLight();
-                                }
-                            } catch (Throwable t) {
-                            }
-                        }
-                    }
-                }).start();
-            } else {
-                LIGHT_LOCK.notifyAll();
-            }
-        }
-    }
-
-    private static void pingLight() {
-        if (!hasNokiaLight) return;
-        try {
-            com.nokia.mid.ui.DeviceControl.setLights(0, 100);
-        } catch (Throwable t) {
-            hasNokiaLight = false;
-        }
-    }
-
     public static void vgrad(Graphics g, int x, int y, int w, int h, int c1, int c2) {
         int r1 = (c1 >> 16) & 255, g1 = (c1 >> 8) & 255, b1 = c1 & 255;
         int r2 = (c2 >> 16) & 255, g2 = (c2 >> 8) & 255, b2 = c2 & 255;
