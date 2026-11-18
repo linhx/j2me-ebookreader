@@ -34,6 +34,9 @@ JDK8=/duong/dan/jdk-8 ./build.sh
 # Chạy thử trên FreeJ2ME-Plus (cần cờ ISO_8859_1 trên JDK mới)
 java -Dfile.encoding=ISO_8859_1 -jar /mnt/data/apps/freej2me-plus/build/freej2me.jar \
   file:///mnt/data/Work/mine/3.pets/j2me-bookreader/dist/BookReader.jar
+
+# Render lại bộ ảnh showcase (240x320) vào thư mục docs/
+./tools/capture-showcase.sh
 ```
 *(Lưu ý: `lib/` đã chứa sẵn stub CLDC 1.1 / MIDP 2.0 / JSR-75 / Nokia UI và ProGuard để preverify bytecode).*
 

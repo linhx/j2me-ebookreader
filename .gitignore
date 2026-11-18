@@ -1,6 +1,6 @@
 # Build output
-/build/
-/dist/
+build/
+dist/
 
 # Emulator runtime data (FreeJ2ME)
 /config/
