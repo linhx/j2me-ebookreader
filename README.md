@@ -2,6 +2,12 @@
 
 Ứng dụng đọc sách **EPUB, HTML/XHTML, TXT** cho điện thoại Nokia Series 40 (CLDC 1.1 / MIDP 2.1 + JSR-75 FileConnection).
 
+## Giao diện (Showcase)
+
+| Thư viện sách | Giao diện Sáng | Giao diện Sepia | Giao diện Tối | Menu |
+|:---:|:---:|:---:|:---:|:---:|
+| ![Thư viện](docs/library.png) | ![Sáng](docs/reader-light.png) | ![Sepia](docs/reader-sepia.png) | ![Tối](docs/reader-dark.png) | ![Menu](docs/menu.png) |
+
 ## Tính năng chính
 - **Giao diện phong cách Opera Mini 4.4:** Thanh tiêu đề và phím mềm chuyển màu (gradient), danh sách nhỏ gọn kèm biểu tượng trực quan, thanh cuộn mảnh và thanh tiến độ đọc dưới chân trang.
 - **Thư viện sách cố định:** Lần đầu mở ứng dụng, bạn chọn thư mục chứa sách; những lần mở sau ứng dụng hiển thị thẳng danh sách sách trong thư viện (có thể đổi thư mục bất cứ lúc nào).
@@ -13,6 +19,7 @@
   - Tự cài đặt bộ giải nén **streaming DEFLATE** (`Inflate`) với cửa sổ trượt cố định 32 KB.
   - Đọc và lọc thẻ HTML/XML (`content.opf`, `toc.ncx`, `nav.xhtml`, chương XHTML) trực tiếp trên luồng `InputStream`, không nạp toàn bộ mảng byte giải nén hay chuỗi HTML thô vào RAM.
   - Tự động chia nhỏ chương siêu dài theo từng phần 32.000 ký tự và đọc file HTML/TXT rời theo từng cửa sổ 36 KB.
+- **Giữ sáng màn hình 1 phút:** Sử dụng Nokia UI API (`DeviceControl.setLights`) để duy trì đèn nền màn hình 60 giây sau mỗi thao tác phím, tránh việc màn hình S40 tắt quá nhanh khi đang đọc.
 - **Giảm hỏi quyền đọc file trên Nokia S40:** Giữ nguyên một kết nối `FileConnection` cho mỗi cuốn sách trong suốt quá trình đọc.
 - **Nhớ vị trí đọc (RMS):** Lưu chương, phần và dòng đang đọc cho từng cuốn sách.
 
@@ -28,7 +35,7 @@ JDK8=/duong/dan/jdk-8 ./build.sh
 java -Dfile.encoding=ISO_8859_1 -jar /mnt/data/apps/freej2me-plus/build/freej2me.jar \
   file:///mnt/data/Work/mine/3.pets/j2me-bookreader/dist/BookReader.jar
 ```
-*(Lưu ý: `lib/` đã chứa sẵn stub CLDC 1.1 / MIDP 2.0 / JSR-75 của MicroEmu và ProGuard để preverify bytecode).*
+*(Lưu ý: `lib/` đã chứa sẵn stub CLDC 1.1 / MIDP 2.0 / JSR-75 / Nokia UI và ProGuard để preverify bytecode).*
 
 ## Phím điều khiển khi đọc
 | Phím | Chức năng |
