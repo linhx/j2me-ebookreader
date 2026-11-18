@@ -1,0 +1,33 @@
+# Build output
+/build/
+/dist/
+
+# Emulator runtime data (FreeJ2ME)
+/config/
+/freej2me_system/
+/rms/
+/sdcard/
+/root1/
+*.jfr
+hs_err_pid*.log
+
+# Signing material - never commit private keys
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.pem
+*.key
+*.crt
+
+# IDE / OS
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+.DS_Store
+Thumbs.db
+*~
+*.swp

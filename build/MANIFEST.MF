@@ -1,0 +1,9 @@
+Manifest-Version: 1.0
+MIDlet-Name: BookReader
+MIDlet-Version: 1.0.0
+MIDlet-Vendor: linh
+MIDlet-1: BookReader,/icon.png,ReaderMidlet
+MIDlet-Icon: /icon.png
+MicroEdition-Configuration: CLDC-1.1
+MicroEdition-Profile: MIDP-2.1
+MIDlet-Permissions: javax.microedition.io.Connector.file.read
