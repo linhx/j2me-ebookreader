@@ -418,8 +418,9 @@ public class ReaderCanvas extends Canvas {
     }
 
     // ------------------------------------------------------------ input
-    protected void keyPressed(int code) { handle(code); }
+    protected void keyPressed(int code) { Ui.keepAwake(); handle(code); }
     protected void keyRepeated(int code) {
+        Ui.keepAwake();
         int a = action(code);
         if (starHeld && (a == UP || a == DOWN)) { return; }
         if (a == UP || a == DOWN || code == KEY_NUM2 || code == KEY_NUM8) handle(code);
@@ -614,5 +615,6 @@ public class ReaderCanvas extends Canvas {
 
     protected void showNotify() {
         metrics();
+        Ui.keepAwake();
     }
 }
