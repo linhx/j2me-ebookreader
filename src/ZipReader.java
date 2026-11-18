@@ -81,7 +81,11 @@ public class ZipReader {
                 din.readFully(nb, 0, nl);
                 skipFully(din, el + cl);
                 String name = new String(nb, 0, nl, "UTF-8");
-                entries.put(name, new int[] {method, (int) csize, (int) usize, (int) off});
+                String ln = name.toLowerCase();
+                // keep only text-like entries: skip images/fonts/css to save heap
+                if (ln.endsWith(".xhtml") || ln.endsWith(".html") || ln.endsWith(".htm") || ln.endsWith(".xml")
+                        || ln.endsWith(".opf") || ln.endsWith(".ncx") || ln.endsWith(".txt"))
+                    entries.put(name, new int[] {method, (int) csize, (int) usize, (int) off});
             }
         } finally {
             in.close();

@@ -16,8 +16,8 @@ public class ListScreen extends Canvas {
     private final Vector labels = new Vector();
     private int[] icons = new int[16];
     private int sel = 0, first = 0;
-    private Font font = Font.getFont(Font.FACE_PROPORTIONAL, Font.STYLE_PLAIN, Font.SIZE_MEDIUM);
-    private Font bold = Font.getFont(Font.FACE_PROPORTIONAL, Font.STYLE_BOLD, Font.SIZE_MEDIUM);
+    private Font font = Font.getFont(Font.FACE_PROPORTIONAL, Font.STYLE_PLAIN, Font.SIZE_SMALL);
+    private Font bold = Font.getFont(Font.FACE_PROPORTIONAL, Font.STYLE_BOLD, Font.SIZE_SMALL);
 
     public ListScreen(Listener l, String title) {
         listener = l;
@@ -46,9 +46,9 @@ public class ListScreen extends Canvas {
         ensureVisible();
     }
 
-    private int titleH() { return bold.getHeight() + 8; }
-    private int barH() { return Font.getFont(Font.FACE_PROPORTIONAL, Font.STYLE_BOLD, Font.SIZE_SMALL).getHeight() + 8; }
-    private int rowH() { return Math.max(font.getHeight(), 14) + 8; }
+    private int titleH() { return bold.getHeight() + 6; }
+    private int barH() { return Font.getFont(Font.FACE_PROPORTIONAL, Font.STYLE_BOLD, Font.SIZE_SMALL).getHeight() + 6; }
+    private int rowH() { return Math.max(font.getHeight(), 12) + 4; }
     private int visibleRows() { return Math.max(1, (getHeight() - titleH() - barH()) / rowH()); }
 
     private void ensureVisible() {
@@ -81,7 +81,7 @@ public class ListScreen extends Canvas {
             int x = 6;
             if (icons[i] != Ui.I_NONE) {
                 Ui.icon(g, icons[i], x, y + (rh - 12) / 2, s);
-                x += 20;
+                x += 19;
             }
             g.setFont(s ? bold : font);
             g.setColor(s ? 0xFFFFFF : 0x202020);

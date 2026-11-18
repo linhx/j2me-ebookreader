@@ -31,7 +31,7 @@ public class Ui {
         g.drawLine(0, 0, w, 0);
         g.setColor(0x6E0C10);
         g.drawLine(0, h - 1, w, h - 1);
-        Font f = Font.getFont(Font.FACE_PROPORTIONAL, Font.STYLE_BOLD, Font.SIZE_MEDIUM);
+        Font f = Font.getFont(Font.FACE_PROPORTIONAL, Font.STYLE_BOLD, Font.SIZE_SMALL);
         g.setFont(f);
         int rw = right == null ? 0 : f.stringWidth(right) + 6;
         g.setColor(0x5A0A0D);

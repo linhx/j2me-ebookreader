@@ -18,7 +18,7 @@ public abstract class Book {
 
     public void close() { }
 
-    public static final int MAX_BYTES = 1200000;
+    public static final int MAX_BYTES = 300000; // keeps peak heap low on 2 MB phones
     public static final int CHUNK_CHARS = 30000;
 
     public static Book open(String url) throws IOException {

@@ -12,22 +12,16 @@ import javax.microedition.lcdui.Display;
 import javax.microedition.lcdui.Displayable;
 import javax.microedition.lcdui.Form;
 import javax.microedition.lcdui.Gauge;
-import javax.microedition.lcdui.Item;
-import javax.microedition.lcdui.List;
 import javax.microedition.midlet.MIDlet;
 
-public class ReaderMidlet extends MIDlet implements CommandListener {
+public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.Listener {
     private Display display;
     private ReaderCanvas reader;
 
     private final Command cBack = new Command("Quay lại", Command.BACK, 1);
     private final Command cOk = new Command("OK", Command.OK, 1);
-    private final Command cExit = new Command("Thoát", Command.EXIT, 9);
-    private final Command cSelect = new Command("Chọn thư mục này", Command.OK, 1);
-    private final Command cChange = new Command("Đổi thư mục sách", Command.ITEM, 2);
-    private final Command cUp = new Command("Lên thư mục cha", Command.ITEM, 2);
 
-    private List menu, browser, toc;
+    private ListScreen menu, browser, toc;
     private Form gotoForm;
     private Gauge gotoGauge;
 
@@ -35,6 +29,7 @@ public class ReaderMidlet extends MIDlet implements CommandListener {
     private String curDir = null; // null => roots
     private String library = null; // chosen books folder
     private boolean chooseMode = false; // true while picking the books folder
+    private boolean hasUpItem = false;
     private Vector entries = new Vector(); // names (dirs end with '/')
 
     protected void startApp() {
@@ -86,7 +81,6 @@ public class ReaderMidlet extends MIDlet implements CommandListener {
                     reader.openBook(url, b);
                     display.setCurrent(reader);
                 } catch (Throwable e) {
-                    Store.put("last", "");
                     String m = "Không mở được: " + e;
                     showBrowser();
                     showError(m);
@@ -98,18 +92,18 @@ public class ReaderMidlet extends MIDlet implements CommandListener {
     // ------------------------------------------------------------ menu
     public void showMenu() {
         reader.saveState();
-        menu = new List("Menu", List.IMPLICIT);
-        menu.append("Tiếp tục đọc", null);
-        menu.append("Mục lục", null);
-        menu.append("Đi tới %", null);
+        menu = new ListScreen(this, "Menu");
+        menu.add("Tiếp tục đọc", Ui.I_BOOK);
+        menu.add("Mục lục", Ui.I_PAGE);
+        menu.add("Đi tới %", Ui.I_PAGE);
         String[] fs = {"nhỏ", "vừa", "lớn"};
         String[] th = {"sáng", "tối", "sepia"};
-        menu.append("Cỡ chữ: " + fs[reader.getFontSize()], null);
-        menu.append("Giao diện: " + th[reader.getTheme()], null);
-        menu.append("Danh sách sách", null);
-        menu.append("Hướng dẫn phím", null);
-        menu.append("Thoát", null);
-        menu.setCommandListener(this);
+        menu.add("Cỡ chữ: " + fs[reader.getFontSize()], Ui.I_GEAR);
+        menu.add("Giao diện: " + th[reader.getTheme()], Ui.I_GEAR);
+        menu.add("Danh sách sách", Ui.I_FOLDER);
+        menu.add("Hướng dẫn phím", Ui.I_GEAR);
+        menu.add("Thoát", Ui.I_GEAR);
+        menu.setSoftKeys("Chọn", "Quay lại");
         display.setCurrent(menu);
     }
 
@@ -117,11 +111,10 @@ public class ReaderMidlet extends MIDlet implements CommandListener {
         Book b = reader.getBook();
         if (b == null) return;
         reader.saveState();
-        toc = new List("Mục lục", List.IMPLICIT);
-        for (int i = 0; i < b.count(); i++) toc.append(b.titles[i], null);
-        toc.setSelectedIndex(reader.getChapter(), true);
-        toc.addCommand(cBack);
-        toc.setCommandListener(this);
+        toc = new ListScreen(this, "Mục lục");
+        for (int i = 0; i < b.count(); i++) toc.add(b.titles[i], Ui.I_PAGE);
+        toc.setSelected(reader.getChapter());
+        toc.setSoftKeys("Mở", "Quay lại");
         display.setCurrent(toc);
     }
 
@@ -140,7 +133,7 @@ public class ReaderMidlet extends MIDlet implements CommandListener {
         f.append("Lên/Xuống (2/8): cuộn 3 dòng\n"
                 + "Trái/Phải (4/6), OK: lùi/tiến trang\n"
                 + "1 / 3: chương trước / sau\n"
-                + "*: đổi cỡ chữ\n"
+                + "Giữ *, bấm Lên/Xuống: tăng/giảm cỡ chữ (bấm * nhanh: đổi cỡ)\n"
                 + "#: đổi giao diện\n"
                 + "Phím mềm trái / 0: Menu\n"
                 + "Phím mềm phải: Mục lục\n");
@@ -158,7 +151,7 @@ public class ReaderMidlet extends MIDlet implements CommandListener {
         showBrowser();
     }
 
-    /** Folder picker: navigate directories, then "Chọn thư mục này". */
+    /** Folder picker: navigate directories, then choose the current one. */
     public void showFolderPicker() {
         chooseMode = true;
         curDir = library;
@@ -186,6 +179,11 @@ public class ReaderMidlet extends MIDlet implements CommandListener {
         String l = name.toLowerCase();
         return l.endsWith(".epub") || l.endsWith(".html") || l.endsWith(".htm") || l.endsWith(".xhtml")
                 || l.endsWith(".txt") || l.endsWith(".xml");
+    }
+
+    private static String stripExt(String name) {
+        int d = name.lastIndexOf('.');
+        return d > 0 ? name.substring(0, d) : name;
     }
 
     private void listDir() throws IOException {
@@ -218,7 +216,7 @@ public class ReaderMidlet extends MIDlet implements CommandListener {
                 fc.close();
             }
         }
-        // sort: dirs first, then alphabetical
+        // sort: drives first, then dirs, then alphabetical
         int n = names.size();
         String[] a = new String[n];
         names.copyInto(a);
@@ -232,24 +230,37 @@ public class ReaderMidlet extends MIDlet implements CommandListener {
             a[j + 1] = x;
         }
         entries = new Vector();
-        browser = new List(curDir == null ? "Chọn ổ đĩa" : (chooseMode ? "Chọn thư mục sách: " : "Thư viện: ") + shortPath(curDir), List.IMPLICIT);
+        String title;
+        if (curDir == null) title = "Chọn ổ đĩa";
+        else if (chooseMode) title = shortPath(curDir);
+        else title = "Thư viện";
+        ListScreen ls = new ListScreen(this, title);
+        hasUpItem = chooseMode && curDir != null;
+        if (hasUpItem) ls.add(".. (thư mục cha)", Ui.I_UP);
         for (int i = 0; i < n; i++) {
             entries.addElement(a[i]);
             String label = a[i];
-            if (label.charAt(0) == '\u0001') label = "[Ổ] " + label.substring(1);
-            else if (label.endsWith("/")) label = "[" + label.substring(0, label.length() - 1) + "]";
-            browser.append(label, null);
+            int icon;
+            if (label.charAt(0) == '\u0001') {
+                label = label.substring(1);
+                icon = Ui.I_DRIVE;
+            } else if (label.endsWith("/")) {
+                label = label.substring(0, label.length() - 1);
+                icon = curDir == null ? Ui.I_DRIVE : Ui.I_FOLDER;
+            } else {
+                label = stripExt(label);
+                icon = Ui.I_BOOK;
+            }
+            ls.add(label, icon);
         }
+        if (!chooseMode && n == 0) ls.add("(Không có sách. Bấm \"Thư mục\" để đổi)", Ui.I_NONE);
         if (chooseMode) {
-            if (curDir != null) browser.addCommand(cSelect);
-            if (curDir != null) browser.addCommand(cUp);
-            if (library != null) browser.addCommand(cBack); // cancel
+            ls.setSoftKeys(curDir != null ? "Chọn" : "", library != null ? "Hủy" : "Thoát");
+            if (hasUpItem && n > 0) ls.setSelected(1);
         } else {
-            browser.addCommand(cChange);
-            if (reader.getBook() != null) browser.addCommand(cBack); // continue reading
+            ls.setSoftKeys("Thư mục", reader.getBook() != null ? "Đọc tiếp" : "Thoát");
         }
-        browser.addCommand(cExit);
-        browser.setCommandListener(this);
+        browser = ls;
         display.setCurrent(browser);
     }
 
@@ -262,8 +273,7 @@ public class ReaderMidlet extends MIDlet implements CommandListener {
     }
 
     private static String shortPath(String url) {
-        String p = url.startsWith("file:///") ? url.substring(8) : url;
-        return p;
+        return url.startsWith("file:///") ? url.substring(8) : url;
     }
 
     private void browserUp() {
@@ -271,7 +281,7 @@ public class ReaderMidlet extends MIDlet implements CommandListener {
         String d = curDir;
         if (d.endsWith("/")) d = d.substring(0, d.length() - 1);
         int s = d.lastIndexOf('/');
-        if (s < 0 || d.length() <= "file:///".length() + 0 || s < "file:///".length()) {
+        if (s < 0 || s < "file:///".length()) {
             curDir = null;
         } else {
             curDir = d.substring(0, s + 1);
@@ -280,25 +290,40 @@ public class ReaderMidlet extends MIDlet implements CommandListener {
         showBrowser();
     }
 
-    // ------------------------------------------------------------ commands
-    public void commandAction(Command c, Displayable d) {
-        if (d == browser) {
-            if (c == cExit) { quit(); return; }
-            if (c == cBack) {
-                if (chooseMode) showLibrary(); else display.setCurrent(reader);
-                return;
+    // ------------------------------------------------------------ list callbacks
+    public void onSoft(ListScreen s, boolean leftKey) {
+        if (s == browser) {
+            if (chooseMode) {
+                if (leftKey) {
+                    if (curDir == null) return;
+                    library = curDir;
+                    Store.put("lib", library);
+                    showLibrary();
+                } else if (library != null) {
+                    showLibrary();
+                } else {
+                    quit();
+                }
+            } else if (leftKey) {
+                showFolderPicker();
+            } else if (reader.getBook() != null) {
+                display.setCurrent(reader);
+            } else {
+                quit();
             }
-            if (c == cUp) { browserUp(); return; }
-            if (c == cChange) { showFolderPicker(); return; }
-            if (c == cSelect) {
-                library = curDir;
-                Store.put("lib", library);
-                showLibrary();
-                return;
+        } else if (s == menu || s == toc) {
+            if (!leftKey) display.setCurrent(reader);
+            else onSelect(s, s.getSelected());
+        }
+    }
+
+    public void onSelect(ListScreen s, int idx) {
+        if (s == browser) {
+            if (hasUpItem) {
+                if (idx == 0) { browserUp(); return; }
+                idx--;
             }
-            if (entries.size() == 0) return;
-            int idx = browser.getSelectedIndex();
-            if (idx < 0) return;
+            if (idx < 0 || idx >= entries.size()) return;
             String name = (String) entries.elementAt(idx);
             if (name.charAt(0) == '\u0001') {
                 String p = name.substring(1);
@@ -312,33 +337,30 @@ public class ReaderMidlet extends MIDlet implements CommandListener {
             } else {
                 openFile(curDir + name);
             }
-        } else if (d == menu) {
-            if (c == List.SELECT_COMMAND) {
-                switch (menu.getSelectedIndex()) {
-                    case 0: display.setCurrent(reader); break;
-                    case 1: showToc(); break;
-                    case 2: showGoto(); break;
-                    case 3: reader.cycleFont(); showMenu(); break;
-                    case 4: reader.setTheme((reader.getTheme() + 1) % 3); showMenu(); break;
-                    case 5: showLibrary(); break;
-                    case 6: showHelp(); break;
-                    case 7: quit(); break;
-                    default: break;
-                }
+        } else if (s == menu) {
+            switch (idx) {
+                case 0: display.setCurrent(reader); break;
+                case 1: showToc(); break;
+                case 2: showGoto(); break;
+                case 3: reader.cycleFont(); showMenu(); menu.setSelected(3); break;
+                case 4: reader.setTheme((reader.getTheme() + 1) % 3); showMenu(); menu.setSelected(4); break;
+                case 5: showLibrary(); break;
+                case 6: showHelp(); break;
+                case 7: quit(); break;
+                default: break;
             }
-        } else if (d == toc) {
-            if (c == cBack) { display.setCurrent(reader); return; }
-            reader.gotoChapter(toc.getSelectedIndex());
+        } else if (s == toc) {
+            reader.gotoChapter(idx);
             display.setCurrent(reader);
-        } else if (d == gotoForm) {
-            if (c == cOk) {
-                reader.gotoPercent(gotoGauge.getValue());
-                display.setCurrent(reader);
-            } else {
-                showMenu();
-            }
+        }
+    }
+
+    // ------------------------------------------------------------ forms (goto %, help)
+    public void commandAction(Command c, Displayable d) {
+        if (d == gotoForm && c == cOk) {
+            reader.gotoPercent(gotoGauge.getValue());
+            display.setCurrent(reader);
         } else {
-            // help form
             showMenu();
         }
     }

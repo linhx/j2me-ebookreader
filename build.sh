@@ -6,7 +6,7 @@ JDK8=${JDK8:-/mnt/data/apps/jdk/jdk-8}
 LIB=$PWD/lib
 BOOT=$LIB/microemu-cldc-2.0.4.jar:$LIB/microemu-midp-2.0.4.jar:$LIB/microemu-jsr-75-2.0.4.jar
 rm -rf build && mkdir -p build/classes build/pre build/jar dist
-$JDK8/bin/javac -source 1.3 -target 1.3 -encoding UTF-8 -g:none -bootclasspath $BOOT:$JDK8/jre/lib/rt.jar -d build/classes src/*.java 2>&1 | grep -v '^warning' || true
+$JDK8/bin/javac -source 1.3 -target 1.3 -encoding UTF-8 -g:none -bootclasspath $BOOT:$JDK8/jre/lib/rt.jar -d build/classes src/*.java > build/javac.log 2>&1 || { cat build/javac.log; exit 1; }
 # Preverify (CLDC StackMap) + shrink-less pass with ProGuard
 cat > build/pg.conf <<EOF
 -injars $PWD/build/classes

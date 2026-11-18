@@ -24,6 +24,9 @@ public class ReaderCanvas extends Canvas {
     private volatile boolean busy = true;
     private String busyMsg = "Đang tải...";
     private int gen = 0;
+    private boolean starHeld = false, starUsed = false;
+    private String toast;
+    private long toastUntil;
 
     private static final int[][] THEMES = {
         // background, text, dim, accent
@@ -52,7 +55,7 @@ public class ReaderCanvas extends Canvas {
         fTitle = Font.getFont(Font.FACE_PROPORTIONAL, Font.STYLE_BOLD,
                 fontSize == 0 ? Font.SIZE_MEDIUM : Font.SIZE_LARGE);
         fSub = Font.getFont(Font.FACE_PROPORTIONAL, Font.STYLE_BOLD, sz);
-        footerH = small.getHeight() + 5;
+        footerH = small.getHeight() + 8;
     }
 
     private void metrics() {
@@ -92,6 +95,7 @@ public class ReaderCanvas extends Canvas {
         new Thread(new Runnable() {
             public void run() {
                 try {
+                    freeChapter();
                     String t = book.chapter(ch);
                     if (g != gen) return;
                     text = t;
@@ -105,11 +109,24 @@ public class ReaderCanvas extends Canvas {
                     if (g != gen) return;
                     busy = false;
                     if (text == null) text = "";
-                    midlet.showError("Lỗi đọc: " + e);
+                    midlet.showError(errText(e));
                 }
                 repaint();
             }
         }).start();
+    }
+
+    /** Drops the current chapter before loading the next one so both are never in memory together. */
+    private void freeChapter() {
+        text = "";
+        nLines = 0;
+        top = 0;
+        System.gc();
+    }
+
+    private static String errText(Throwable e) {
+        if (e instanceof OutOfMemoryError) return "Hết bộ nhớ. Chương này quá lớn cho máy.";
+        return "Lỗi đọc: " + e;
     }
 
     private int lastTop() {
@@ -255,20 +272,30 @@ public class ReaderCanvas extends Canvas {
             drawLine(g, i, y, w, t);
             y += lh[i];
         }
-        // footer: progress bar + labels
+        if (toast != null && System.currentTimeMillis() < toastUntil) {
+            g.setFont(small);
+            int tw = small.stringWidth(toast) + 16, tx = (w - tw) / 2, ty = h / 2 - 12;
+            g.setColor(0x202020);
+            g.fillRoundRect(tx, ty, tw, small.getHeight() + 10, 8, 8);
+            g.setColor(0xFFFFFF);
+            g.drawString(toast, w / 2, ty + 5, Graphics.TOP | Graphics.HCENTER);
+        }
+        // scrollbar + footer (gradient soft-key bar with progress strip)
         int fy = h - footerH;
         int total = book == null ? 1 : book.count();
         double frac = (chapter + (nLines > 1 ? (double) top / (nLines - 1) : 0)) / total;
         if (frac > 1) frac = 1;
-        g.setColor(t[2]);
+        Ui.scrollbar(g, w - 3, 2, fy - 4, nLines, top, cnt, t[0] == 0x101010 ? 0x262626 : 0xEAEAEA, t[2]);
+        int c1 = theme == 1 ? 0x3C3C3C : theme == 2 ? 0xE9DDC1 : 0xF0F0F0;
+        int c2 = theme == 1 ? 0x1C1C1C : theme == 2 ? 0xC9B993 : 0xB4B4B4;
+        Ui.softBar(g, fy, w, footerH, "Menu", "Mục lục", c1, c2, theme == 1 ? 0xE0E0E0 : 0x202020);
+        g.setColor(0x808080);
         g.drawLine(0, fy, w, fy);
         g.setColor(t[3]);
-        g.fillRect(0, fy, (int) (w * frac), 2);
+        g.fillRect(0, fy + 1, (int) (w * frac), 2);
         g.setFont(small);
-        g.setColor(t[2]);
-        g.drawString("Menu", 3, fy + 3, Graphics.TOP | Graphics.LEFT);
-        g.drawString("Mục lục", w - 3, fy + 3, Graphics.TOP | Graphics.RIGHT);
-        g.drawString((chapter + 1) + "/" + total + "  " + (int) (frac * 100) + "%", w / 2, fy + 3,
+        g.setColor(theme == 1 ? 0xE0E0E0 : 0x202020);
+        g.drawString((chapter + 1) + "/" + total + "  " + (int) (frac * 100) + "%", w / 2, fy + 4,
                 Graphics.TOP | Graphics.HCENTER);
     }
 
@@ -345,6 +372,7 @@ public class ReaderCanvas extends Canvas {
     protected void keyPressed(int code) { handle(code); }
     protected void keyRepeated(int code) {
         int a = action(code);
+        if (starHeld && (a == UP || a == DOWN)) { return; }
         if (a == UP || a == DOWN || code == KEY_NUM2 || code == KEY_NUM8) handle(code);
     }
 
@@ -354,6 +382,26 @@ public class ReaderCanvas extends Canvas {
         } catch (Exception e) {
             return 0;
         }
+    }
+
+    protected void keyReleased(int code) {
+        if (code == KEY_STAR) {
+            if (starHeld && !starUsed && !busy && book != null) cycleFont();
+            starHeld = false;
+            starUsed = false;
+        }
+    }
+
+    private void showToast(String t) {
+        toast = t;
+        toastUntil = System.currentTimeMillis() + 1200;
+        repaint();
+        new Thread(new Runnable() {
+            public void run() {
+                try { Thread.sleep(1300); } catch (InterruptedException e) { }
+                repaint();
+            }
+        }).start();
     }
 
     private void handle(int code) {
@@ -368,7 +416,15 @@ public class ReaderCanvas extends Canvas {
         else if (code == KEY_NUM5) a = FIRE;
         if (code == KEY_NUM1) { gotoChapter(chapter - 1, START); return; }
         if (code == KEY_NUM3) { gotoChapter(chapter + 1, START); return; }
-        if (code == KEY_STAR) { cycleFont(); return; }
+        if (code == KEY_STAR) { starHeld = true; return; }
+        if (starHeld && (a == UP || a == DOWN)) {
+            starUsed = true;
+            int ns = Math.max(0, Math.min(2, fontSize + (a == UP ? 1 : -1)));
+            if (ns != fontSize) setFontSize(ns);
+            String[] nm = {"nhỏ", "vừa", "lớn"};
+            showToast("Cỡ chữ: " + nm[fontSize]);
+            return;
+        }
         if (code == KEY_POUND) { setTheme((theme + 1) % THEMES.length); return; }
         if (code == KEY_NUM0) { midlet.showMenu(); return; }
         switch (a) {
@@ -443,6 +499,7 @@ public class ReaderCanvas extends Canvas {
         new Thread(new Runnable() {
             public void run() {
                 try {
+                    freeChapter();
                     String t = book.chapter(ch);
                     if (g != gen) return;
                     text = t;
@@ -452,7 +509,7 @@ public class ReaderCanvas extends Canvas {
                     busy = false;
                 } catch (Throwable e) {
                     busy = false;
-                    midlet.showError("Lỗi đọc: " + e);
+                    midlet.showError(errText(e));
                 }
                 repaint();
             }
