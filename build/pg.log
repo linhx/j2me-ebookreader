@@ -1,8 +1,0 @@
-ProGuard, version 6.2.2
-Reading program directory [/mnt/data/Work/mine/3.pets/j2me-bookreader/build/classes] (filtered)
-Reading library jar [/mnt/data/Work/mine/3.pets/j2me-bookreader/lib/microemu-cldc-2.0.4.jar] (filtered)
-Reading library jar [/mnt/data/Work/mine/3.pets/j2me-bookreader/lib/microemu-midp-2.0.4.jar] (filtered)
-Reading library jar [/mnt/data/Work/mine/3.pets/j2me-bookreader/lib/microemu-jsr-75-2.0.4.jar] (filtered)
-Reading library jar [/mnt/data/apps/jdk/jdk-8/jre/lib/rt.jar] (filtered)
-Preparing output directory [/mnt/data/Work/mine/3.pets/j2me-bookreader/build/pre] (filtered)
-  Copying resources from program directory [/mnt/data/Work/mine/3.pets/j2me-bookreader/build/classes] (filtered)

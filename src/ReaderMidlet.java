@@ -67,24 +67,29 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
     }
 
     private void showWait(String msg) {
-        Form f = new Form("Bookreader");
-        f.append(new Gauge(msg, false, Gauge.INDEFINITE, Gauge.CONTINUOUS_RUNNING));
-        display.setCurrent(f);
+        Displayable cur = display.getCurrent();
+        if (cur instanceof ListScreen) {
+            ((ListScreen) cur).setLoading(msg);
+            return;
+        }
+        ListScreen wait = browser != null ? browser : new ListScreen(this, "BookReader");
+        wait.setLoading(msg);
+        display.setCurrent(wait);
     }
 
     // ------------------------------------------------------------ open
     private void openFile(final String url) {
+        showWait("Đang mở sách...");
         if (reader != null) reader.closeBook();
         toc = null;
         menu = null;
-        browser = null;
         entries.removeAllElements();
         System.gc();
-        showWait("Đang mở sách...");
         new Thread(new Runnable() {
             public void run() {
                 try {
                     Book b = Book.open(url);
+                    browser = null;
                     reader.openBook(url, b);
                     display.setCurrent(reader);
                 } catch (Throwable e) {

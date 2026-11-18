@@ -114,6 +114,61 @@ public class Ui {
         g.fillRect(x, ty, 3, th);
     }
 
+    /** Opera Mini 4.4 style centered loading dialog box. */
+    public static void loadingBox(Graphics g, int w, int h, String msg, boolean dark) {
+        Font bf = Font.getFont(Font.FACE_PROPORTIONAL, Font.STYLE_BOLD, Font.SIZE_SMALL);
+        Font pf = Font.getFont(Font.FACE_PROPORTIONAL, Font.STYLE_PLAIN, Font.SIZE_SMALL);
+        int bw = Math.min(w - 32, 204);
+        int headH = bf.getHeight() + 6;
+        int bh = headH + pf.getHeight() + 28;
+        int bx = (w - bw) / 2;
+        int by = (h - bh) / 2;
+
+        // Drop shadow
+        g.setColor(dark ? 0x050505 : 0xB8B8B8);
+        g.fillRect(bx + 2, by + 2, bw, bh);
+
+        // Box body
+        vgrad(g, bx, by + headH, bw, bh - headH, dark ? 0x2A2A2A : 0xFFFFFF, dark ? 0x1A1A1A : 0xEAEAEA);
+
+        // Red gradient header bar
+        vgrad(g, bx, by, bw, headH, RED1, RED2);
+        g.setColor(0xFF6A6F);
+        g.drawLine(bx + 1, by + 1, bx + bw - 2, by + 1);
+        icon(g, I_BOOK, bx + 6, by + (headH - 12) / 2, true);
+        g.setFont(bf);
+        g.setColor(0x5A0A0D);
+        g.drawString("BookReader", bx + 23, by + 4, Graphics.TOP | Graphics.LEFT);
+        g.setColor(0xFFFFFF);
+        g.drawString("BookReader", bx + 22, by + 3, Graphics.TOP | Graphics.LEFT);
+
+        // Message text
+        g.setFont(pf);
+        g.setColor(dark ? 0xE0E0E0 : 0x202020);
+        String t = fit(pf, msg, bw - 16);
+        int ty = by + headH + 7;
+        g.drawString(t, w / 2, ty, Graphics.TOP | Graphics.HCENTER);
+
+        // Opera-style glossy progress track & bar
+        int pw = bw - 24;
+        int ph = 7;
+        int px = bx + 12;
+        int py = ty + pf.getHeight() + 7;
+        g.setColor(dark ? 0x101010 : 0xD4D4D4);
+        g.fillRect(px, py, pw, ph);
+        g.setColor(dark ? 0x505050 : 0x9A9A9A);
+        g.drawRect(px, py, pw - 1, ph - 1);
+
+        int fillW = (pw - 2) * 3 / 5;
+        vgrad(g, px + 1, py + 1, fillW, ph - 2, RED1, RED2);
+        g.setColor(0xFF7A7F);
+        g.drawLine(px + 1, py + 1, px + fillW, py + 1);
+
+        // Outer border
+        g.setColor(dark ? 0x606060 : 0x6E0C10);
+        g.drawRect(bx, by, bw - 1, bh - 1);
+    }
+
     // ---- small 14x12 icons, drawn at (x, y)
     public static final int I_NONE = 0, I_FOLDER = 1, I_BOOK = 2, I_UP = 3, I_DRIVE = 4, I_PAGE = 5, I_GEAR = 6;
 

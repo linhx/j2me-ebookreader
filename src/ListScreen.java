@@ -13,6 +13,7 @@ public class ListScreen extends Canvas {
     private final Listener listener;
     private String title = "";
     private String left, right;
+    private String loadingMsg;
     private final Vector labels = new Vector();
     private int[] icons = new int[16];
     private int sel = 0, first = 0;
@@ -26,6 +27,11 @@ public class ListScreen extends Canvas {
     }
 
     public void setSoftKeys(String l, String r) { left = l; right = r; }
+
+    public void setLoading(String msg) {
+        loadingMsg = msg;
+        repaint();
+    }
 
     public void add(String label, int icon) {
         if (labels.size() == icons.length) {
@@ -96,6 +102,9 @@ public class ListScreen extends Canvas {
         Ui.scrollbar(g, w - 4, th, h - th - bh, n, first, v, 0xE6E6E6, 0xB0B0B0);
         Ui.titleBar(g, w, th, title, n > 0 ? (sel + 1) + "/" + n : null);
         Ui.softBar(g, h - bh, w, bh, left, right, 0xF0F0F0, 0xB4B4B4, 0x202020);
+        if (loadingMsg != null) {
+            Ui.loadingBox(g, w, h, loadingMsg, false);
+        }
     }
 
     protected void keyPressed(int code) { Ui.keepAwake(); handle(code); }
@@ -111,6 +120,7 @@ public class ListScreen extends Canvas {
     }
 
     private void handle(int code) {
+        if (loadingMsg != null) return;
         if (code == -6 || code == -21) { listener.onSoft(this, true); return; }
         if (code == -7 || code == -22) { listener.onSoft(this, false); return; }
         int a = action(code);

@@ -308,9 +308,12 @@ public class ReaderCanvas extends Canvas {
         g.setColor(t[0]);
         g.fillRect(0, 0, w, h);
         g.setColor(t[1]);
+        int fy = h - footerH;
+        int c1 = theme == 1 ? 0x3C3C3C : theme == 2 ? 0xE9DDC1 : 0xF0F0F0;
+        int c2 = theme == 1 ? 0x1C1C1C : theme == 2 ? 0xC9B993 : 0xB4B4B4;
         if (busy) {
-            g.setFont(font);
-            g.drawString(busyMsg, w / 2, h / 2, Graphics.HCENTER | Graphics.BASELINE);
+            Ui.softBar(g, fy, w, footerH, "Menu", "Mục lục", c1, c2, theme == 1 ? 0xE0E0E0 : 0x202020);
+            Ui.loadingBox(g, w, h, busyMsg, theme == 1);
             return;
         }
         if (availH < 1) metrics();
@@ -330,13 +333,10 @@ public class ReaderCanvas extends Canvas {
             g.drawString(toast, w / 2, ty + 5, Graphics.TOP | Graphics.HCENTER);
         }
         // scrollbar + footer (gradient soft-key bar with progress strip)
-        int fy = h - footerH;
         int total = book == null ? 1 : book.count();
         double frac = (chapter + (nLines > 1 ? (double) top / (nLines - 1) : 0)) / total;
         if (frac > 1) frac = 1;
         Ui.scrollbar(g, w - 3, 2, fy - 4, nLines, top, cnt, t[0] == 0x101010 ? 0x262626 : 0xEAEAEA, t[2]);
-        int c1 = theme == 1 ? 0x3C3C3C : theme == 2 ? 0xE9DDC1 : 0xF0F0F0;
-        int c2 = theme == 1 ? 0x1C1C1C : theme == 2 ? 0xC9B993 : 0xB4B4B4;
         Ui.softBar(g, fy, w, footerH, "Menu", "Mục lục", c1, c2, theme == 1 ? 0xE0E0E0 : 0x202020);
         g.setColor(0x808080);
         g.drawLine(0, fy, w, fy);
