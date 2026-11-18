@@ -29,6 +29,7 @@ public class ReaderCanvas extends Canvas {
     private String busyMsg = "Đang tải...";
     private int gen = 0;
     private boolean starHeld = false, starUsed = false;
+    private volatile int heldKey = 0, heldGen = 0;
     private String toast;
     private long toastUntil;
 
@@ -182,10 +183,15 @@ public class ReaderCanvas extends Canvas {
     private boolean just(int i) { return (meta[i] & (1 << 19)) != 0; }
 
     private int lastTop() {
-        int used = 0, t = nLines - 1;
-        for (int i = nLines - 1; i >= 0; i--) {
-            int add = lh(i) + (i < nLines - 1 ? gap(i + 1) : 0);
-            if (used + add > availH) break;
+        return prevPageTop(nLines);
+    }
+
+    /** Computes the top line index of the full page immediately preceding 'from'. */
+    private int prevPageTop(int from) {
+        int used = 0, t = from - 1;
+        for (int i = from - 1; i >= 0; i--) {
+            int add = lh(i) + (i < from - 1 ? gap(i + 1) : 0);
+            if (used + add > availH && i < from - 1) break;
             used += add;
             t = i;
         }
@@ -418,12 +424,32 @@ public class ReaderCanvas extends Canvas {
     }
 
     // ------------------------------------------------------------ input
-    protected void keyPressed(int code) { Ui.keepAwake(); handle(code); }
+    protected void keyPressed(final int code) {
+        Ui.keepAwake();
+        if (heldKey == code) return;
+        handle(code, false);
+        int a = navAction(code);
+        if (!starHeld && (a == UP || a == DOWN || a == LEFT || a == RIGHT)) {
+            heldKey = code;
+            final int hg = ++heldGen;
+            new Thread(new Runnable() {
+                public void run() {
+                    try { Thread.sleep(320); } catch (InterruptedException e) { return; }
+                    while (heldKey == code && heldGen == hg && !busy) {
+                        Ui.keepAwake();
+                        if (!stepHold(code)) break;
+                        repaint();
+                        serviceRepaints();
+                        if (heldKey != code || heldGen != hg) break;
+                        try { Thread.sleep(110); } catch (InterruptedException e) { return; }
+                    }
+                }
+            }).start();
+        }
+    }
+
     protected void keyRepeated(int code) {
         Ui.keepAwake();
-        int a = action(code);
-        if (starHeld && (a == UP || a == DOWN)) { return; }
-        if (a == UP || a == DOWN || code == KEY_NUM2 || code == KEY_NUM8) handle(code);
     }
 
     private int action(int code) {
@@ -434,12 +460,31 @@ public class ReaderCanvas extends Canvas {
         }
     }
 
+    private int navAction(int code) {
+        if (code == KEY_NUM2) return UP;
+        if (code == KEY_NUM8) return DOWN;
+        if (code == KEY_NUM4) return LEFT;
+        if (code == KEY_NUM6) return RIGHT;
+        if (code == KEY_NUM5) return FIRE;
+        return action(code);
+    }
+
     protected void keyReleased(int code) {
+        if (heldKey == code) {
+            heldKey = 0;
+            heldGen++;
+        }
         if (code == KEY_STAR) {
             if (starHeld && !starUsed && !busy && book != null) cycleFont();
             starHeld = false;
             starUsed = false;
         }
+    }
+
+    protected void hideNotify() {
+        heldKey = 0;
+        heldGen++;
+        starHeld = false;
     }
 
     private void showToast(String t) {
@@ -454,16 +499,37 @@ public class ReaderCanvas extends Canvas {
         }).start();
     }
 
-    private void handle(int code) {
+    /** Performs one synchronous step while a directional key is held. Returns false if boundary reached. */
+    private boolean stepHold(int code) {
+        if (busy || book == null) return false;
+        int a = navAction(code);
+        if (a == UP) {
+            if (top <= 0) return false;
+            top = Math.max(0, top - 4);
+            return true;
+        } else if (a == DOWN) {
+            int max = lastTop();
+            if (top >= max) return false;
+            top = Math.min(max, top + 4);
+            return true;
+        } else if (a == LEFT) {
+            if (top <= 0) return false;
+            top = prevPageTop(top);
+            return true;
+        } else if (a == RIGHT) {
+            int cnt = fits(top);
+            if (top + cnt >= nLines) return false;
+            top = top + cnt;
+            return true;
+        }
+        return false;
+    }
+
+    private void handle(int code, boolean repeat) {
         if (code == -6 || code == -21) { midlet.showMenu(); return; }
         if (code == -7 || code == -22) { midlet.showToc(); return; }
         if (busy || book == null) return;
-        int a = action(code);
-        if (code == KEY_NUM2) a = UP;
-        else if (code == KEY_NUM8) a = DOWN;
-        else if (code == KEY_NUM4) a = LEFT;
-        else if (code == KEY_NUM6) a = RIGHT;
-        else if (code == KEY_NUM5) a = FIRE;
+        int a = navAction(code);
         if (code == KEY_NUM1) { gotoChapter(chapter - 1, START); return; }
         if (code == KEY_NUM3) { gotoChapter(chapter + 1, START); return; }
         if (code == KEY_STAR) { starHeld = true; return; }
@@ -478,11 +544,11 @@ public class ReaderCanvas extends Canvas {
         if (code == KEY_POUND) { setTheme((theme + 1) % THEMES.length); return; }
         if (code == KEY_NUM0) { midlet.showMenu(); return; }
         switch (a) {
-            case UP: scroll(-3); break;
-            case DOWN: scroll(3); break;
-            case LEFT: page(-1); break;
+            case UP: scroll(repeat ? -5 : -3); break;
+            case DOWN: scroll(repeat ? 5 : 3); break;
+            case LEFT: page(-1, repeat); break;
             case RIGHT:
-            case FIRE: page(1); break;
+            case FIRE: page(1, repeat); break;
             default: break;
         }
     }
@@ -496,10 +562,11 @@ public class ReaderCanvas extends Canvas {
         repaint();
     }
 
-    private void page(int dir) {
+    private void page(int dir, boolean repeat) {
         if (dir > 0) {
             int cnt = fits(top);
             if (top + cnt >= nLines) {
+                if (repeat) return; // stop at chapter boundary while fast-holding
                 if (hasMorePart) {
                     if (partIdx + 1 < partHistory.length) partHistory[++partIdx] = nextPartOff;
                     load(chapter, nextPartOff, START, 0);
@@ -507,11 +574,12 @@ public class ReaderCanvas extends Canvas {
                     gotoChapter(chapter + 1, START);
                 }
             } else {
-                top = Math.min(top + Math.max(1, cnt - 1), lastTop());
+                top = top + cnt;
                 repaint();
             }
         } else {
             if (top <= 0) {
+                if (repeat) return; // stop at chapter boundary while fast-holding
                 if (partOff > 0) {
                     int prev = partIdx > 0 ? partHistory[--partIdx] : Math.max(0, partOff - Html.MAX_PART_CHARS);
                     load(chapter, prev, END, 0);
@@ -519,7 +587,7 @@ public class ReaderCanvas extends Canvas {
                     gotoChapter(chapter - 1, END);
                 }
             } else {
-                top = Math.max(0, top - Math.max(1, fits(top) - 1));
+                top = prevPageTop(top);
                 repaint();
             }
         }

@@ -7,13 +7,17 @@ public class Ui {
 
     private static final Object LIGHT_LOCK = new Object();
     private static volatile long lightUntil = 0;
+    private static volatile long lastPing = 0;
     private static boolean lightThreadStarted = false;
     private static boolean hasNokiaLight = true;
 
     /** Keeps the screen backlight on for 1 minute (~60 seconds) after the last interaction. */
     public static void keepAwake() {
+        long now = System.currentTimeMillis();
         // Nokia S40 default timeout is ~15s; refreshing every 4s for 48s keeps screen lit ~60s total.
-        lightUntil = System.currentTimeMillis() + 48000L;
+        lightUntil = now + 48000L;
+        if (now - lastPing < 3000L && lightThreadStarted) return;
+        lastPing = now;
         pingLight();
         synchronized (LIGHT_LOCK) {
             if (!lightThreadStarted) {
@@ -30,7 +34,9 @@ public class Ui {
                                     }
                                     LIGHT_LOCK.wait(Math.min(4000L, rem));
                                 }
-                                if (System.currentTimeMillis() < lightUntil) {
+                                long t = System.currentTimeMillis();
+                                if (t < lightUntil) {
+                                    lastPing = t;
                                     pingLight();
                                 }
                             } catch (Throwable t) {

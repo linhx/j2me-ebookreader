@@ -112,7 +112,9 @@ public class ListScreen extends Canvas {
     protected void keyRepeated(int code) {
         Ui.keepAwake();
         int a = action(code);
-        if (a == UP || a == DOWN || code == KEY_NUM2 || code == KEY_NUM8) handle(code);
+        if (a == UP || a == DOWN || a == LEFT || a == RIGHT
+                || code == KEY_NUM2 || code == KEY_NUM8 || code == KEY_NUM4 || code == KEY_NUM6)
+            handle(code);
     }
 
     private int action(int code) {
@@ -126,6 +128,8 @@ public class ListScreen extends Canvas {
         int a = action(code);
         if (code == KEY_NUM2) a = UP;
         else if (code == KEY_NUM8) a = DOWN;
+        else if (code == KEY_NUM4) a = LEFT;
+        else if (code == KEY_NUM6) a = RIGHT;
         else if (code == KEY_NUM5) a = FIRE;
         int n = labels.size();
         if (n == 0) return;
