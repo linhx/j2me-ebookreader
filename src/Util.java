@@ -1,23 +1,7 @@
-import java.io.IOException;
-import java.util.Hashtable;
 import java.util.Vector;
 
-/** Text decoding, tiny XML/HTML helpers. */
+/** Text decoding and path/HTML helpers. */
 public class Util {
-
-    /** Decode bytes: UTF-8 if valid, otherwise ISO-8859-1. */
-    public static String decode(byte[] b, int off, int len) {
-        if (len >= 3 && (b[off] & 0xFF) == 0xEF && (b[off + 1] & 0xFF) == 0xBB && (b[off + 2] & 0xFF) == 0xBF) {
-            off += 3;
-            len -= 3;
-        }
-        try {
-            if (isUtf8(b, off, len)) return new String(b, off, len, "UTF-8");
-            return new String(b, off, len, "ISO-8859-1");
-        } catch (Exception e) {
-            return new String(b, off, len);
-        }
-    }
 
     /** Validates UTF-8; tolerates a truncated sequence at the very end. */
     public static boolean isUtf8(byte[] b, int off, int len) {
@@ -41,23 +25,6 @@ public class Util {
     private static boolean checkTail(byte[] b, int from, int end) {
         for (int k = from; k < end; k++) if ((b[k] & 0xC0) != 0x80) return false;
         return true;
-    }
-
-    public static String lower(String s) {
-        return s.toLowerCase();
-    }
-
-    public static int indexOfIgnoreCase(String s, String what, int from) {
-        int n = what.length();
-        int max = s.length() - n;
-        char f = Character.toLowerCase(what.charAt(0));
-        for (int i = from; i <= max; i++) {
-            if (Character.toLowerCase(s.charAt(i)) != f) continue;
-            int k = 1;
-            while (k < n && Character.toLowerCase(s.charAt(i + k)) == Character.toLowerCase(what.charAt(k))) k++;
-            if (k == n) return i;
-        }
-        return -1;
     }
 
     public static String replace(String s, String a, String b) {
@@ -128,83 +95,6 @@ public class Util {
             sb.append((String) parts.elementAt(i));
         }
         return sb.toString();
-    }
-
-    /**
-     * Find all start tags with the given name (case-insensitive). Each result is a Hashtable of
-     * lower-cased attribute name -> value, plus key "#pos" (Integer, index after the tag).
-     */
-    public static Vector tags(String xml, String name) {
-        Vector res = new Vector();
-        int pos = 0;
-        String key = "<" + name;
-        while (true) {
-            int i = indexOfIgnoreCase(xml, key, pos);
-            if (i < 0) break;
-            int after = i + key.length();
-            if (after < xml.length()) {
-                char c = xml.charAt(after);
-                if (!(c == ' ' || c == '>' || c == '/' || c == '\n' || c == '\r' || c == '\t')) {
-                    pos = after;
-                    continue;
-                }
-            }
-            int end = tagEnd(xml, after);
-            Hashtable h = parseAttrs(xml, after, end);
-            h.put("#pos", new Integer(end + 1));
-            h.put("#start", new Integer(i));
-            res.addElement(h);
-            pos = end + 1;
-        }
-        return res;
-    }
-
-    public static int tagEnd(String s, int from) {
-        char q = 0;
-        for (int i = from; i < s.length(); i++) {
-            char c = s.charAt(i);
-            if (q != 0) {
-                if (c == q) q = 0;
-            } else if (c == '"' || c == '\'') {
-                q = c;
-            } else if (c == '>') {
-                return i;
-            }
-        }
-        return s.length() - 1;
-    }
-
-    public static Hashtable parseAttrs(String s, int from, int to) {
-        Hashtable h = new Hashtable();
-        int i = from;
-        while (i < to) {
-            while (i < to && isSpace(s.charAt(i))) i++;
-            int ns = i;
-            while (i < to && s.charAt(i) != '=' && !isSpace(s.charAt(i)) && s.charAt(i) != '/') i++;
-            if (i == ns) { i++; continue; }
-            String an = s.substring(ns, i).toLowerCase();
-            while (i < to && isSpace(s.charAt(i))) i++;
-            if (i < to && s.charAt(i) == '=') {
-                i++;
-                while (i < to && isSpace(s.charAt(i))) i++;
-                String val;
-                if (i < to && (s.charAt(i) == '"' || s.charAt(i) == '\'')) {
-                    char q = s.charAt(i++);
-                    int vs = i;
-                    while (i < to && s.charAt(i) != q) i++;
-                    val = s.substring(vs, i);
-                    i++;
-                } else {
-                    int vs = i;
-                    while (i < to && !isSpace(s.charAt(i))) i++;
-                    val = s.substring(vs, i);
-                }
-                h.put(an, val);
-            } else {
-                h.put(an, "");
-            }
-        }
-        return h;
     }
 
     public static boolean isSpace(char c) {

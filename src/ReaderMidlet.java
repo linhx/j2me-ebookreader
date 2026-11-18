@@ -73,6 +73,12 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
 
     // ------------------------------------------------------------ open
     private void openFile(final String url) {
+        if (reader != null) reader.closeBook();
+        toc = null;
+        menu = null;
+        browser = null;
+        entries.removeAllElements();
+        System.gc();
         showWait("Đang mở sách...");
         new Thread(new Runnable() {
             public void run() {
@@ -81,7 +87,10 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
                     reader.openBook(url, b);
                     display.setCurrent(reader);
                 } catch (Throwable e) {
-                    String m = "Không mở được: " + e;
+                    System.gc();
+                    String m = (e instanceof OutOfMemoryError)
+                            ? "Hết bộ nhớ khi mở sách."
+                            : ("Không mở được: " + e);
                     showBrowser();
                     showError(m);
                 }

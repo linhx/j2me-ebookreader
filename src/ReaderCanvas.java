@@ -2,7 +2,7 @@ import javax.microedition.lcdui.Canvas;
 import javax.microedition.lcdui.Font;
 import javax.microedition.lcdui.Graphics;
 
-/** Paged text reader. */
+/** Paged text reader engineered for low memory usage on CLDC 1.1. */
 public class ReaderCanvas extends Canvas {
     private static final int START = 0, END = 1, OFFSET = 2;
 
@@ -10,11 +10,15 @@ public class ReaderCanvas extends Canvas {
     private Book book;
     private String url;
     private int chapter;
+    private int partOff = 0;
+    private boolean hasMorePart = false;
+    private int nextPartOff = 0;
+    private final int[] partHistory = new int[32];
+    private int partIdx = 0;
+
     private String text = "";
-    private int[] ls = new int[256], le = new int[256];
-    private int[] lh = new int[256], gap = new int[256]; // line height, gap above
-    private byte[] kind = new byte[256]; // 0 body, 1 title, 2 subheading, 3 rule
-    private boolean[] ind = new boolean[256], just = new boolean[256];
+    // Packed line layout: ls (start), le (end), meta (bits 0..7=lh, 8..15=gap, 16..17=kind, 18=ind, 19=just)
+    private int[] ls = new int[256], le = new int[256], meta = new int[256];
     private int nLines = 0;
     private int top = 0;
 
@@ -65,28 +69,51 @@ public class ReaderCanvas extends Canvas {
         linesPerPage = Math.max(1, availH / lineH);
     }
 
-    // ------------------------------------------------------------ book loading
+    // ------------------------------------------------------------ book lifecycle
+    /** Releases the current book and chapter memory before opening another book. */
+    public void closeBook() {
+        saveState();
+        Book old = book;
+        book = null;
+        url = null;
+        if (old != null) old.close();
+        freeChapter();
+    }
+
     public void openBook(String bookUrl, Book b) {
         saveState();
         Book old = book;
         url = bookUrl;
         book = b;
         if (old != null && old != b) old.close();
-        int ch = 0, off = 0;
+        int ch = 0, pOff = 0, off = 0;
         String p = Store.get("p:" + url, "");
-        int c = p.indexOf(',');
-        if (c > 0) {
+        int c1 = p.indexOf(',');
+        if (c1 > 0) {
             try {
-                ch = Integer.parseInt(p.substring(0, c));
-                off = Integer.parseInt(p.substring(c + 1));
-            } catch (Exception e) { ch = 0; off = 0; }
+                ch = Integer.parseInt(p.substring(0, c1));
+                int c2 = p.indexOf(',', c1 + 1);
+                if (c2 > 0) {
+                    pOff = Integer.parseInt(p.substring(c1 + 1, c2));
+                    off = Integer.parseInt(p.substring(c2 + 1));
+                } else {
+                    off = Integer.parseInt(p.substring(c1 + 1));
+                }
+            } catch (Exception e) { ch = 0; pOff = 0; off = 0; }
         }
-        if (ch < 0 || ch >= b.count()) { ch = 0; off = 0; }
+        if (ch < 0 || ch >= b.count()) { ch = 0; pOff = 0; off = 0; }
+        partHistory[0] = 0;
+        if (pOff > 0) {
+            partIdx = 1;
+            partHistory[1] = pOff;
+        } else {
+            partIdx = 0;
+        }
         Store.put("last", url);
-        load(ch, OFFSET, off);
+        load(ch, pOff, OFFSET, off);
     }
 
-    private void load(final int ch, final int mode, final int off) {
+    private void load(final int ch, final int initPartOff, final int mode, final int off) {
         saveState();
         busy = true;
         busyMsg = "Đang tải...";
@@ -96,10 +123,24 @@ public class ReaderCanvas extends Canvas {
             public void run() {
                 try {
                     freeChapter();
-                    String t = book.chapter(ch);
+                    int[] outMeta = new int[2];
+                    int pOff = initPartOff;
+                    int pIdx = partIdx;
+                    String t = book.chapter(ch, pOff, outMeta);
+                    while (mode == END && outMeta[0] == 1 && pIdx + 1 < partHistory.length) {
+                        pOff = outMeta[1];
+                        partHistory[++pIdx] = pOff;
+                        t = null;
+                        System.gc();
+                        t = book.chapter(ch, pOff, outMeta);
+                    }
                     if (g != gen) return;
                     text = t;
                     chapter = ch;
+                    partOff = pOff;
+                    partIdx = pIdx;
+                    hasMorePart = outMeta[0] == 1;
+                    nextPartOff = outMeta[1];
                     layout();
                     if (mode == START) top = 0;
                     else if (mode == END) top = lastTop();
@@ -116,11 +157,16 @@ public class ReaderCanvas extends Canvas {
         }).start();
     }
 
-    /** Drops the current chapter before loading the next one so both are never in memory together. */
-    private void freeChapter() {
+    /** Drops the current chapter and shrinks layout buffers before loading the next one. */
+    public void freeChapter() {
         text = "";
         nLines = 0;
         top = 0;
+        if (ls.length > 256) {
+            ls = new int[256];
+            le = new int[256];
+            meta = new int[256];
+        }
         System.gc();
     }
 
@@ -129,10 +175,16 @@ public class ReaderCanvas extends Canvas {
         return "Lỗi đọc: " + e;
     }
 
+    private int lh(int i) { return meta[i] & 0xFF; }
+    private int gap(int i) { return (meta[i] >> 8) & 0xFF; }
+    private int kind(int i) { return (meta[i] >> 16) & 3; }
+    private boolean ind(int i) { return (meta[i] & (1 << 18)) != 0; }
+    private boolean just(int i) { return (meta[i] & (1 << 19)) != 0; }
+
     private int lastTop() {
         int used = 0, t = nLines - 1;
         for (int i = nLines - 1; i >= 0; i--) {
-            int add = lh[i] + (i < nLines - 1 ? gap[i + 1] : 0);
+            int add = lh(i) + (i < nLines - 1 ? gap(i + 1) : 0);
             if (used + add > availH) break;
             used += add;
             t = i;
@@ -150,14 +202,9 @@ public class ReaderCanvas extends Canvas {
 
     private void grow() {
         int n = ls.length * 2;
-        ls = grow(ls, n); le = grow(le, n); lh = grow(lh, n); gap = grow(gap, n);
-        byte[] k = new byte[n];
-        System.arraycopy(kind, 0, k, 0, nLines);
-        kind = k;
-        boolean[] c = new boolean[n], d = new boolean[n];
-        System.arraycopy(ind, 0, c, 0, nLines);
-        System.arraycopy(just, 0, d, 0, nLines);
-        ind = c; just = d;
+        ls = grow(ls, n);
+        le = grow(le, n);
+        meta = grow(meta, n);
     }
 
     private int[] grow(int[] a, int n) {
@@ -168,8 +215,10 @@ public class ReaderCanvas extends Canvas {
 
     private void addLine(int s, int e, int knd, boolean in, boolean j, int height, int gp) {
         if (nLines == ls.length) grow();
-        ls[nLines] = s; le[nLines] = e; kind[nLines] = (byte) knd; ind[nLines] = in; just[nLines] = j;
-        lh[nLines] = height; gap[nLines] = gp;
+        ls[nLines] = s;
+        le[nLines] = e;
+        meta[nLines] = (height & 0xFF) | ((gp & 0xFF) << 8) | ((knd & 3) << 16)
+                | (in ? (1 << 18) : 0) | (j ? (1 << 19) : 0);
         nLines++;
     }
 
@@ -244,7 +293,7 @@ public class ReaderCanvas extends Canvas {
     private int fits(int from) {
         int used = 0, n = 0;
         for (int i = from; i < nLines; i++) {
-            int hh = lh[i] + (i == from ? 0 : gap[i]);
+            int hh = lh(i) + (i == from ? 0 : gap(i));
             if (used + hh > availH && n > 0) break;
             used += hh;
             n++;
@@ -268,9 +317,9 @@ public class ReaderCanvas extends Canvas {
         int y = 4;
         int cnt = fits(top);
         for (int i = top; i < nLines && i < top + cnt; i++) {
-            if (i > top) y += gap[i];
+            if (i > top) y += gap(i);
             drawLine(g, i, y, w, t);
-            y += lh[i];
+            y += lh(i);
         }
         if (toast != null && System.currentTimeMillis() < toastUntil) {
             g.setFont(small);
@@ -300,10 +349,11 @@ public class ReaderCanvas extends Canvas {
     }
 
     private void drawLine(Graphics g, int i, int y, int w, int[] t) {
-        int knd = kind[i];
+        int knd = kind(i);
+        int lhi = lh(i);
         if (knd == 3) {
             g.setColor(t[2]);
-            int ly = y + lh[i] / 2;
+            int ly = y + lhi / 2;
             g.drawLine(w / 4, ly, w - w / 4, ly);
             g.setColor(t[3]);
             g.fillRect(w / 2 - 2, ly - 1, 4, 3);
@@ -315,16 +365,15 @@ public class ReaderCanvas extends Canvas {
         g.setFont(f);
         if (knd == 0) {
             g.setColor(t[1]);
-            int x = margin + (ind[i] ? font.charWidth(' ') * 2 : 0);
-            if (just[i] && drawJustified(g, i, x, y, f)) return;
+            int x = margin + (ind(i) ? font.charWidth(' ') * 2 : 0);
+            if (just(i) && drawJustified(g, i, x, y, f)) return;
             g.drawSubstring(text, ls[i], len, x, y, Graphics.TOP | Graphics.LEFT);
         } else if (knd == 1) {
             g.setColor(t[3]);
             g.drawSubstring(text, ls[i], len, w / 2, y, Graphics.TOP | Graphics.HCENTER);
-            if (i + 1 >= nLines || kind[i + 1] != 1) {
-                // underline accent below the title block
+            if (i + 1 >= nLines || kind(i + 1) != 1) {
                 int uw = Math.min(textW / 3, 50);
-                g.fillRect(w / 2 - uw / 2, y + lh[i] - 3, uw, 1);
+                g.fillRect(w / 2 - uw / 2, y + lhi - 3, uw, 1);
             }
         } else {
             g.setColor(t[3]);
@@ -450,14 +499,24 @@ public class ReaderCanvas extends Canvas {
         if (dir > 0) {
             int cnt = fits(top);
             if (top + cnt >= nLines) {
-                gotoChapter(chapter + 1, START);
+                if (hasMorePart) {
+                    if (partIdx + 1 < partHistory.length) partHistory[++partIdx] = nextPartOff;
+                    load(chapter, nextPartOff, START, 0);
+                } else {
+                    gotoChapter(chapter + 1, START);
+                }
             } else {
                 top = Math.min(top + Math.max(1, cnt - 1), lastTop());
                 repaint();
             }
         } else {
             if (top <= 0) {
-                gotoChapter(chapter - 1, END);
+                if (partOff > 0) {
+                    int prev = partIdx > 0 ? partHistory[--partIdx] : Math.max(0, partOff - Html.MAX_PART_CHARS);
+                    load(chapter, prev, END, 0);
+                } else {
+                    gotoChapter(chapter - 1, END);
+                }
             } else {
                 top = Math.max(0, top - Math.max(1, fits(top) - 1));
                 repaint();
@@ -467,7 +526,9 @@ public class ReaderCanvas extends Canvas {
 
     public void gotoChapter(int ch, int mode) {
         if (book == null || ch < 0 || ch >= book.count()) return;
-        load(ch, mode, 0);
+        partIdx = 0;
+        partHistory[0] = 0;
+        load(ch, 0, mode, 0);
     }
 
     public void gotoChapter(int ch) {
@@ -480,13 +541,11 @@ public class ReaderCanvas extends Canvas {
         int ch = (int) pos;
         if (ch >= book.count()) { ch = book.count() - 1; pos = ch; }
         double frac = pos - ch;
-        if (ch == chapter && !busy) {
+        if (ch == chapter && partOff == 0 && !hasMorePart && !busy) {
             top = Math.min(lastTop(), (int) (frac * nLines));
             repaint();
         } else {
-            // approximate: load, then position by fraction of text via offset estimate
-            final double f = frac;
-            loadFraction(ch, f);
+            loadFraction(ch, frac);
         }
     }
 
@@ -500,10 +559,16 @@ public class ReaderCanvas extends Canvas {
             public void run() {
                 try {
                     freeChapter();
-                    String t = book.chapter(ch);
+                    int[] outMeta = new int[2];
+                    String t = book.chapter(ch, 0, outMeta);
                     if (g != gen) return;
                     text = t;
                     chapter = ch;
+                    partOff = 0;
+                    partIdx = 0;
+                    partHistory[0] = 0;
+                    hasMorePart = outMeta[0] == 1;
+                    nextPartOff = outMeta[1];
                     layout();
                     top = Math.min(lastTop(), (int) (frac * nLines));
                     busy = false;
@@ -543,7 +608,7 @@ public class ReaderCanvas extends Canvas {
 
     public void saveState() {
         if (book != null && url != null && !busy && nLines > 0) {
-            Store.put("p:" + url, chapter + "," + ls[Math.min(top, nLines - 1)]);
+            Store.put("p:" + url, chapter + "," + partOff + "," + ls[Math.min(top, nLines - 1)]);
         }
     }
 
