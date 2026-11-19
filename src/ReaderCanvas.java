@@ -407,13 +407,22 @@ public class ReaderCanvas extends Canvas {
         g.setColor(t[3]);
         g.fillRect(0, fy + 1, (int) (w * frac), 2);
         g.setFont(small);
-        g.setColor(theme == 1 ? 0xE0E0E0 : 0x202020);
+        int fty = fy + (footerH - small.getHeight()) / 2;
         if (selectedNote >= 0 && notes != null && selectedNote < notes.length) {
+            String noteHint = "OK: Đọc [" + notes[selectedNote].label + "]";
+            int maxMidW = w - 110;
+            if (small.stringWidth(noteHint) > maxMidW) {
+                noteHint = "OK: Đọc";
+            }
+            int nhw = small.stringWidth(noteHint) + 12;
+            int nhx = (w - nhw) / 2;
             g.setColor(t[3]);
-            g.drawString("★ Chú thích [" + notes[selectedNote].label + "] (OK: Đọc)", w / 2, fy + 4,
-                    Graphics.TOP | Graphics.HCENTER);
+            g.fillRoundRect(nhx, fty - 1, nhw, small.getHeight() + 2, 4, 4);
+            g.setColor(0xFFFFFF);
+            g.drawString(noteHint, w / 2, fty, Graphics.TOP | Graphics.HCENTER);
         } else {
-            g.drawString((chapter + 1) + "/" + total + "  " + (int) (frac * 100) + "%", w / 2, fy + 4,
+            g.setColor(theme == 1 ? 0xE0E0E0 : 0x202020);
+            g.drawString((chapter + 1) + "/" + total + "  " + (int) (frac * 100) + "%", w / 2, fty,
                     Graphics.TOP | Graphics.HCENTER);
         }
         if (activeNote != null) {
@@ -802,15 +811,17 @@ public class ReaderCanvas extends Canvas {
             g.drawLine(0, y, w, y);
         }
 
-        int dw = w - 24;
-        int dx = 12;
+        int dw = w - 20;
+        int dx = 10;
         Font bf = fFootnote;
-        int maxBodyH = h - 70;
+        int barH = 24;
+        int footH = Math.max(24, small.getHeight() + 8);
+        int maxBodyH = h - barH - footH - 40;
         java.util.Vector bodyLines = wrapNoteBody(activeNote.body, dw - 24, bf);
         int lineStep = bf.getHeight() + 2;
         int visibleLines = Math.min(bodyLines.size(), maxBodyH / lineStep);
         if (visibleLines < 1) visibleLines = 1;
-        int boxH = visibleLines * lineStep + 54;
+        int boxH = visibleLines * lineStep + barH + footH + 16;
         int dy = (h - boxH) / 2;
 
         // Dialog background
@@ -820,7 +831,6 @@ public class ReaderCanvas extends Canvas {
         g.drawRoundRect(dx, dy, dw, boxH, 8, 8);
 
         // Header bar
-        int barH = 24;
         Ui.vgrad(g, dx + 1, dy + 1, dw - 2, barH, Ui.RED1, Ui.RED2);
         g.setColor(0xFFFFFF);
         Font fHeader = (fontSize == 2) ? fSub : Font.getFont(Font.FACE_PROPORTIONAL, Font.STYLE_BOLD, Font.SIZE_SMALL);
@@ -830,7 +840,7 @@ public class ReaderCanvas extends Canvas {
         // Body text
         g.setFont(bf);
         g.setColor(t[1]);
-        int by = dy + barH + 6;
+        int by = dy + barH + 8;
         int maxScroll = Math.max(0, bodyLines.size() - visibleLines);
         if (noteScroll > maxScroll) noteScroll = maxScroll;
         if (noteScroll < 0) noteScroll = 0;
@@ -847,18 +857,18 @@ public class ReaderCanvas extends Canvas {
 
         // Scrollbar if content exceeds visible area
         if (bodyLines.size() > visibleLines) {
-            Ui.scrollbar(g, dx + dw - 7, dy + barH + 5, boxH - barH - 28,
+            Ui.scrollbar(g, dx + dw - 7, dy + barH + 5, boxH - barH - footH - 10,
                     bodyLines.size(), noteScroll, visibleLines, t[2], t[3]);
         }
 
         // Footer
-        int fy = dy + boxH - 20;
+        int fy = dy + boxH - footH;
         g.setColor(t[2]);
         g.drawLine(dx + 2, fy, dx + dw - 2, fy);
         g.setFont(small);
         g.setColor(t[3]);
-        String footerText = maxScroll > 0 ? "Cuộn: Lên/Xuống (2/8) | OK: Đóng" : "Bấm OK để đóng";
-        g.drawString(footerText, dx + dw / 2, fy + 4, Graphics.TOP | Graphics.HCENTER);
+        String footerText = maxScroll > 0 ? "2/8: Cuộn  |  OK: Đóng" : "Bấm OK để đóng";
+        g.drawString(footerText, dx + dw / 2, fy + (footH - small.getHeight()) / 2, Graphics.TOP | Graphics.HCENTER);
     }
 
     private boolean drawJustifiedString(Graphics g, String str, int x, int y, int availW, Font f) {
