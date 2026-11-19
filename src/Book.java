@@ -29,6 +29,9 @@ public abstract class Book {
 
     public void close() { }
 
+    public int[] getImageDimensions(String path) { return null; }
+    public javax.microedition.lcdui.Image getImage(String path) { return null; }
+
     public static Book open(String url) throws IOException {
         String l = url.toLowerCase();
         if (l.endsWith(".epub") || l.endsWith(".zip")) return new EpubBook(url);
@@ -40,16 +43,25 @@ public abstract class Book {
     static class TextBook extends Book {
         private static final int CH = 36000;
         private static final int SLACK = 6144;
+        private final String url;
         private final FileConnection fc; // kept open: one permission prompt per book
         private final long size;
         private final boolean html;
         private boolean utf8 = true;
 
         TextBook(String url, boolean html) throws IOException {
+            this.url = url;
             this.html = html;
-            fc = (FileConnection) Connector.open(url, Connector.READ);
-            if (fc == null) throw new IOException("No file access");
-            size = fc.fileSize();
+            FileConnection f = null;
+            try {
+                f = (FileConnection) Connector.open(url, Connector.READ);
+            } catch (Throwable t) { }
+            fc = f;
+            if (fc != null) {
+                size = fc.fileSize();
+            } else {
+                size = desktopSize(url);
+            }
             int n = (int) ((size + CH - 1) / CH);
             if (n < 1) n = 1;
             titles = new String[n];
@@ -58,10 +70,35 @@ public abstract class Book {
             utf8 = Util.isUtf8(head, 0, head.length);
         }
 
+        private static long desktopSize(String u) throws IOException {
+            try {
+                String p = ZipReader.toLocalPath(u);
+                Class cf = Class.forName("java.io.File");
+                Object f = cf.getConstructor(new Class[] {String.class}).newInstance(new Object[] {p});
+                Long len = (Long) cf.getMethod("length", null).invoke(f, null);
+                return len.longValue();
+            } catch (Throwable t) {
+                throw new IOException("No file access: " + u);
+            }
+        }
+
+        private InputStream openStream() throws IOException {
+            if (fc != null) return fc.openInputStream();
+            try {
+                String p = ZipReader.toLocalPath(url);
+                Class cf = Class.forName("java.io.File");
+                Object f = cf.getConstructor(new Class[] {String.class}).newInstance(new Object[] {p});
+                Class ci = Class.forName("java.io.FileInputStream");
+                return (InputStream) ci.getConstructor(new Class[] {cf}).newInstance(new Object[] {f});
+            } catch (Throwable t) {
+                throw new IOException("Desktop open failed: " + t);
+            }
+        }
+
         private byte[] window(long from, int len) throws IOException {
             if (from + len > size) len = (int) (size - from);
             if (len <= 0) return new byte[0];
-            InputStream in = fc.openInputStream();
+            InputStream in = openStream();
             try {
                 ZipReader.skipFully(in, from);
                 byte[] b = new byte[len];
@@ -107,7 +144,7 @@ public abstract class Book {
         }
 
         public void close() {
-            try { fc.close(); } catch (Exception e) { }
+            if (fc != null) try { fc.close(); } catch (Exception e) { }
         }
 
         public String chapter(int i, int skipChars, int[] outMeta) throws IOException {
@@ -279,9 +316,39 @@ public abstract class Book {
         public String chapter(int i, int skipChars, int[] outMeta) throws IOException {
             InputStream in = zip.openStream(files[i]);
             try {
-                return Html.toText(in, skipChars, Html.MAX_PART_CHARS, outMeta);
+                return Html.toText(in, files[i], skipChars, Html.MAX_PART_CHARS, outMeta);
             } finally {
                 in.close();
+            }
+        }
+
+        public int[] getImageDimensions(String path) {
+            if (zip == null || path == null) return null;
+            int[] e = zip.getEntry(path);
+            if (e == null || e[2] > 80000) return null; // uncompressed > 80KB: skip to protect heap
+            InputStream in = null;
+            try {
+                in = zip.openStream(path);
+                return ImageUtil.getDimensions(in);
+            } catch (Throwable t) {
+                return null;
+            } finally {
+                if (in != null) try { in.close(); } catch (Exception ignored) { }
+            }
+        }
+
+        public javax.microedition.lcdui.Image getImage(String path) {
+            if (zip == null || path == null) return null;
+            int[] e = zip.getEntry(path);
+            if (e == null || e[2] > 80000) return null;
+            InputStream in = null;
+            try {
+                in = zip.openStream(path);
+                return javax.microedition.lcdui.Image.createImage(in);
+            } catch (Throwable t) {
+                return null;
+            } finally {
+                if (in != null) try { in.close(); } catch (Exception ignored) { }
             }
         }
     }

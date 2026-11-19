@@ -28,6 +28,7 @@ public class Html {
     private int csp = 0;
     private boolean firstByte = true;
 
+    private String baseFile;
     private char[] out;
     private int outLen = 0;
     private int pos = 0; // total logical chars emitted from start of stream
@@ -51,13 +52,18 @@ public class Html {
      *   outMeta[0] = 1 if there is more visible text after this part, 0 otherwise
      *   outMeta[1] = next skipChars offset
      */
-    public static String toText(InputStream in, int skipChars, int maxChars, int[] outMeta) throws IOException {
+    public static String toText(InputStream in, String baseFile, int skipChars, int maxChars, int[] outMeta) throws IOException {
         Html p = new Html();
         p.in = in;
+        p.baseFile = baseFile;
         p.skipChars = skipChars;
         p.maxChars = maxChars;
         p.out = new char[Math.min(maxChars + 64, 4096)];
         return p.parse(outMeta);
+    }
+
+    public static String toText(InputStream in, int skipChars, int maxChars, int[] outMeta) throws IOException {
+        return toText(in, null, skipChars, maxChars, outMeta);
     }
 
     private int readByte() throws IOException {
@@ -191,6 +197,47 @@ public class Html {
                     t = nextChar();
                 }
                 String name = nlen > 0 ? new String(nameBuf, 0, nlen) : "";
+                String imgSrc = null, imgAlt = null;
+                if (!closing && (name.equals("img") || name.equals("image"))) {
+                    StringBuffer an = new StringBuffer();
+                    StringBuffer av = new StringBuffer();
+                    while (t >= 0 && t != '>') {
+                        while (t >= 0 && (t == ' ' || t == '\t' || t == '\r' || t == '\n')) t = nextChar();
+                        if (t < 0 || t == '>' || t == '/') break;
+                        an.setLength(0);
+                        while (t >= 0 && isNameChar((char) t)) {
+                            an.append(Character.toLowerCase((char) t));
+                            t = nextChar();
+                        }
+                        while (t >= 0 && (t == ' ' || t == '\t' || t == '\r' || t == '\n')) t = nextChar();
+                        if (t == '=') {
+                            t = nextChar();
+                            while (t >= 0 && (t == ' ' || t == '\t' || t == '\r' || t == '\n')) t = nextChar();
+                            av.setLength(0);
+                            if (t == '"' || t == '\'') {
+                                int quote = t;
+                                t = nextChar();
+                                while (t >= 0 && t != quote) {
+                                    av.append((char) t);
+                                    t = nextChar();
+                                }
+                                if (t == quote) t = nextChar();
+                            } else {
+                                while (t >= 0 && t > ' ' && t != '>' && t != '/') {
+                                    av.append((char) t);
+                                    t = nextChar();
+                                }
+                            }
+                            String aName = an.toString();
+                            String aVal = av.toString();
+                            if (aName.equals("src") || aName.equals("href") || aName.endsWith(":href")) {
+                                if (imgSrc == null) imgSrc = aVal;
+                            } else if (aName.equals("alt") || aName.equals("title")) {
+                                if (imgAlt == null) imgAlt = aVal;
+                            }
+                        }
+                    }
+                }
                 char q = 0;
                 int lastNonSpace = closing ? '/' : 0;
                 while (t >= 0) {
@@ -206,6 +253,29 @@ public class Html {
                     t = nextChar();
                 }
                 boolean selfClose = !closing && (lastNonSpace == '/');
+                if (imgSrc != null && imgSrc.length() > 0) {
+                    String full = baseFile != null ? Util.resolve(baseFile, imgSrc) : imgSrc;
+                    if (marked && lineStart) {
+                        unemit();
+                        marked = false;
+                    }
+                    if (!lineStart) {
+                        emit('\n');
+                        lineStart = true;
+                    }
+                    emit('\u0004');
+                    for (int k = 0; k < full.length(); k++) emit(full.charAt(k));
+                    if (imgAlt != null && imgAlt.trim().length() > 0) {
+                        emit('\t');
+                        String at = imgAlt.trim();
+                        for (int k = 0; k < at.length(); k++) emit(at.charAt(k));
+                    }
+                    emit('\n');
+                    lineStart = true;
+                    space = false;
+                    marked = false;
+                    continue;
+                }
                 if (!closing && !selfClose && (name.equals("script") || name.equals("style") || name.equals("head"))) {
                     skipUntilClose(name);
                     continue;

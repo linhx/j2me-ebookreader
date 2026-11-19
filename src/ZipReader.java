@@ -7,19 +7,63 @@ import javax.microedition.io.file.FileConnection;
 
 /** Random-access ZIP reader built on top of JSR-75 FileConnection. */
 public class ZipReader {
+    private final String url;
     private final FileConnection fc; // kept open so the phone asks for permission only once
     private final long size;
     private final Hashtable entries = new Hashtable(); // name -> int[]{method, csize, usize, offset}
 
     public ZipReader(String url) throws IOException {
-        fc = (FileConnection) Connector.open(url, Connector.READ);
-        if (fc == null) throw new IOException("No file access");
-        size = fc.fileSize();
+        this.url = url;
+        FileConnection f = null;
+        try {
+            f = (FileConnection) Connector.open(url, Connector.READ);
+        } catch (Throwable t) { }
+        fc = f;
+        if (fc != null) {
+            size = fc.fileSize();
+        } else {
+            size = desktopSize(url);
+        }
         readDirectory();
     }
 
+    static String toLocalPath(String u) {
+        String p = u;
+        if (p.startsWith("file:///")) p = p.substring(7);
+        else if (p.startsWith("file://")) p = p.substring(6);
+        if (p.length() >= 3 && p.charAt(0) == '/' && p.charAt(2) == ':') {
+            p = p.substring(1);
+        }
+        return p;
+    }
+
+    private static long desktopSize(String u) throws IOException {
+        try {
+            String p = toLocalPath(u);
+            Class cf = Class.forName("java.io.File");
+            Object f = cf.getConstructor(new Class[] {String.class}).newInstance(new Object[] {p});
+            Long len = (Long) cf.getMethod("length", null).invoke(f, null);
+            return len.longValue();
+        } catch (Throwable t) {
+            throw new IOException("No file access: " + u);
+        }
+    }
+
     private InputStream open(long skip) throws IOException {
-        InputStream in = fc.openInputStream();
+        InputStream in;
+        if (fc != null) {
+            in = fc.openInputStream();
+        } else {
+            try {
+                String p = toLocalPath(url);
+                Class cf = Class.forName("java.io.File");
+                Object f = cf.getConstructor(new Class[] {String.class}).newInstance(new Object[] {p});
+                Class ci = Class.forName("java.io.FileInputStream");
+                in = (InputStream) ci.getConstructor(new Class[] {cf}).newInstance(new Object[] {f});
+            } catch (Throwable t) {
+                throw new IOException("Desktop open failed: " + t);
+            }
+        }
         skipFully(in, skip);
         return in;
     }
@@ -90,9 +134,10 @@ public class ZipReader {
                 skipFully(din, el + cl);
                 String name = new String(nb, 0, nl, "UTF-8");
                 String ln = name.toLowerCase();
-                // keep only text-like entries: skip images/fonts/css to save heap
+                // keep text-like entries and supported images
                 if (ln.endsWith(".xhtml") || ln.endsWith(".html") || ln.endsWith(".htm") || ln.endsWith(".xml")
-                        || ln.endsWith(".opf") || ln.endsWith(".ncx") || ln.endsWith(".txt"))
+                        || ln.endsWith(".opf") || ln.endsWith(".ncx") || ln.endsWith(".txt")
+                        || ln.endsWith(".jpg") || ln.endsWith(".jpeg") || ln.endsWith(".png") || ln.endsWith(".gif"))
                     entries.put(name, new int[] {method, (int) csize, (int) usize, (int) off});
             }
         } finally {
@@ -111,11 +156,16 @@ public class ZipReader {
 
     public void close() {
         entries.clear();
-        try { fc.close(); } catch (Exception e) { }
+        if (fc != null) try { fc.close(); } catch (Exception e) { }
     }
 
     public boolean has(String name) {
         return entries.containsKey(name);
+    }
+
+    public int[] getEntry(String name) {
+        String real = find(name);
+        return real != null ? (int[]) entries.get(real) : null;
     }
 
     /** Find an entry ignoring case if exact name is missing; returns the real name or null. */

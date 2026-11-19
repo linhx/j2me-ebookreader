@@ -206,28 +206,35 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
             try {
                 Enumeration en = FileSystemRegistry.listRoots();
                 while (en.hasMoreElements()) names.addElement(((String) en.nextElement()));
-            } catch (Throwable t) {
-                // some emulators have a non-standard FileSystemRegistry; fall back to well-known roots
-                String[] guess = {"E:/", "C:/", "root1/"};
-                for (int i = 0; i < guess.length; i++) names.addElement("\u0001" + guess[i]);
-            }
+            } catch (Throwable t) { }
             String[] props = {"fileconn.dir.memorycard", "fileconn.dir.documents", "fileconn.dir.photos"};
             for (int i = props.length - 1; i >= 0; i--) {
                 String v = System.getProperty(props[i]);
                 if (v != null && v.length() > 0 && names.indexOf("\u0001" + v) < 0) names.insertElementAt("\u0001" + v, 0);
             }
+            if (names.size() == 0) {
+                String[] guess = {"E:/", "C:/", "root1/"};
+                for (int i = 0; i < guess.length; i++) names.addElement("\u0001" + guess[i]);
+            }
+            addDesktopRoots(names);
         } else {
-            FileConnection fc = (FileConnection) Connector.open(curDir, Connector.READ);
-            if (fc == null) throw new IOException("Thiết bị/emulator không hỗ trợ truy cập file (JSR-75)");
+            FileConnection fc = null;
             try {
-                Enumeration en = fc.list();
-                while (en.hasMoreElements()) {
-                    String n = (String) en.nextElement();
-                    boolean dir = n.endsWith("/");
-                    if (chooseMode ? dir : (!dir && readable(n))) names.addElement(n);
+                fc = (FileConnection) Connector.open(curDir, Connector.READ);
+            } catch (Throwable t) { }
+            if (fc != null) {
+                try {
+                    Enumeration en = fc.list();
+                    while (en.hasMoreElements()) {
+                        String n = (String) en.nextElement();
+                        boolean dir = n.endsWith("/");
+                        if (chooseMode ? dir : (!dir && readable(n))) names.addElement(n);
+                    }
+                } finally {
+                    fc.close();
                 }
-            } finally {
-                fc.close();
+            } else {
+                listDesktopDir(curDir, names);
             }
         }
         // sort: drives first, then dirs, then alphabetical
@@ -290,6 +297,74 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
         return url.startsWith("file:///") ? url.substring(8) : url;
     }
 
+    private static String toLocalPath(String u) {
+        String p = u;
+        if (p.startsWith("file:///")) p = p.substring(7);
+        else if (p.startsWith("file://")) p = p.substring(6);
+        if (p.length() >= 3 && p.charAt(0) == '/' && p.charAt(2) == ':') {
+            p = p.substring(1);
+        }
+        return p;
+    }
+
+    private static void addDesktopRoots(Vector names) {
+        try {
+            Class cf = Class.forName("java.io.File");
+            String home = System.getProperty("user.home");
+            if (home != null && home.length() > 0) {
+                if (!home.endsWith("/")) home += "/";
+                addDirIfValid(names, home);
+                addDirIfValid(names, home + "Downloads/");
+            }
+            addDirIfValid(names, "/mnt/data/");
+            Object[] roots = (Object[]) cf.getMethod("listRoots", null).invoke(null, null);
+            if (roots != null) {
+                java.lang.reflect.Method mPath = cf.getMethod("getPath", null);
+                for (int i = 0; i < roots.length; i++) {
+                    String p = (String) mPath.invoke(roots[i], null);
+                    if (!p.endsWith("/")) p += "/";
+                    addDirIfValid(names, p);
+                }
+            }
+        } catch (Throwable t) { }
+    }
+
+    private static void addDirIfValid(Vector names, String p) {
+        try {
+            Class cf = Class.forName("java.io.File");
+            Object f = cf.getConstructor(new Class[] {String.class}).newInstance(new Object[] {p});
+            Boolean ex = (Boolean) cf.getMethod("exists", null).invoke(f, null);
+            if (ex.booleanValue()) {
+                String entry = "\u0001" + p;
+                if (names.indexOf(entry) < 0) names.addElement(entry);
+            }
+        } catch (Throwable t) { }
+    }
+
+    private void listDesktopDir(String dirUrl, Vector names) throws IOException {
+        try {
+            String p = toLocalPath(dirUrl);
+            Class cf = Class.forName("java.io.File");
+            Object dir = cf.getConstructor(new Class[] {String.class}).newInstance(new Object[] {p});
+            Object[] files = (Object[]) cf.getMethod("listFiles", null).invoke(dir, null);
+            if (files != null) {
+                java.lang.reflect.Method mName = cf.getMethod("getName", null);
+                java.lang.reflect.Method mIsDir = cf.getMethod("isDirectory", null);
+                for (int i = 0; i < files.length; i++) {
+                    Object f = files[i];
+                    String n = (String) mName.invoke(f, null);
+                    boolean isDir = ((Boolean) mIsDir.invoke(f, null)).booleanValue();
+                    if (isDir) n += "/";
+                    if (chooseMode ? isDir : (!dirUrl.endsWith("/") && readable(n) || readable(n))) {
+                        names.addElement(n);
+                    }
+                }
+            }
+        } catch (Throwable t) {
+            throw new IOException("Không thể đọc thư mục: " + dirUrl);
+        }
+    }
+
     private void browserUp() {
         if (curDir == null) return;
         String d = curDir;
@@ -339,6 +414,7 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
             String name = (String) entries.elementAt(idx);
             if (name.charAt(0) == '\u0001') {
                 String p = name.substring(1);
+                if (p.startsWith("/")) p = p.substring(1);
                 if (!p.startsWith("file:///")) p = "file:///" + p;
                 if (!p.endsWith("/")) p += "/";
                 curDir = p;

@@ -20,7 +20,25 @@
   - Đọc và lọc thẻ HTML/XML (`content.opf`, `toc.ncx`, `nav.xhtml`, chương XHTML) trực tiếp trên luồng `InputStream`, không nạp toàn bộ mảng byte giải nén hay chuỗi HTML thô vào RAM.
   - Tự động chia nhỏ chương siêu dài theo từng phần 32.000 ký tự và đọc file HTML/TXT rời theo từng cửa sổ 36 KB.
 - **Giảm hỏi quyền đọc file trên Nokia S40:** Giữ nguyên một kết nối `FileConnection` cho mỗi cuốn sách trong suốt quá trình đọc.
+- **Hỗ trợ hiển thị ảnh an toàn (Anti-OOM Image Rendering):**
+  - Đọc kích thước ảnh từ header file (JPEG, PNG, GIF) trực tiếp trên luồng không cần nạp bitmap vào RAM.
+  - Tự động hiển thị hình ảnh căn giữa vừa vặn nếu ảnh nằm trong ngưỡng an toàn ($\le 240\times 320$, dung lượng $\le 80$ KB).
+  - Tự động chuyển thành dòng chữ in nghiêng kèm biểu tượng placeholder `[Ảnh: ... (quá lớn)]` đối với các ảnh độ phân giải cao chưa được resize để bảo vệ máy tuyệt đối khỏi lỗi sập ứng dụng (OutOfMemoryError).
+  - Bộ nhớ cache ảnh chỉ giữ tối đa 3 ảnh và tự động dọn sạch khi chuyển trang/chương.
 - **Nhớ vị trí đọc (RMS):** Lưu chương, phần và dòng đang đọc cho từng cuốn sách.
+
+## Công cụ tối ưu sách EPUB cho Nokia C2-01
+Trước khi chép sách vào thẻ nhớ điện thoại, bạn có thể chạy script để tự động nén toàn bộ ảnh về chuẩn màn hình `232x280`:
+```bash
+# Cài Pillow nếu chưa có
+pip install Pillow
+
+# Tối ưu một file EPUB (kết quả lưu thành <ten_sach>_c201.epub)
+./tools/optimize-epub.py "/duong/dan/sach.epub"
+
+# Hoặc chỉ định rõ file xuất:
+./tools/optimize-epub.py "/duong/dan/sach.epub" "/duong/dan/sach_nokia.epub"
+```
 
 ## Build & Chạy thử
 ```bash

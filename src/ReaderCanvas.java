@@ -1,6 +1,7 @@
 import javax.microedition.lcdui.Canvas;
 import javax.microedition.lcdui.Font;
 import javax.microedition.lcdui.Graphics;
+import javax.microedition.lcdui.Image;
 
 /** Paged text reader engineered for low memory usage on CLDC 1.1. */
 public class ReaderCanvas extends Canvas {
@@ -22,7 +23,7 @@ public class ReaderCanvas extends Canvas {
     private int nLines = 0;
     private int top = 0;
 
-    private Font font, small, fTitle, fSub;
+    private Font font, small, fTitle, fSub, fItalic;
     private int fontSize, theme;
     private int lineH, linesPerPage, margin = 7, footerH, textW, availH;
     private volatile boolean busy = true;
@@ -32,6 +33,7 @@ public class ReaderCanvas extends Canvas {
     private volatile int heldKey = 0, heldGen = 0;
     private String toast;
     private long toastUntil;
+    private java.util.Hashtable imgCache = new java.util.Hashtable();
 
     private static final int[][] THEMES = {
         // background, text, dim, accent
@@ -60,6 +62,7 @@ public class ReaderCanvas extends Canvas {
         fTitle = Font.getFont(Font.FACE_PROPORTIONAL, Font.STYLE_BOLD,
                 fontSize == 0 ? Font.SIZE_MEDIUM : Font.SIZE_LARGE);
         fSub = Font.getFont(Font.FACE_PROPORTIONAL, Font.STYLE_BOLD, sz);
+        fItalic = Font.getFont(Font.FACE_PROPORTIONAL, Font.STYLE_ITALIC, sz);
         footerH = small.getHeight() + 8;
     }
 
@@ -163,6 +166,7 @@ public class ReaderCanvas extends Canvas {
         text = "";
         nLines = 0;
         top = 0;
+        imgCache.clear();
         if (ls.length > 256) {
             ls = new int[256];
             le = new int[256];
@@ -171,14 +175,31 @@ public class ReaderCanvas extends Canvas {
         System.gc();
     }
 
+    private Image getImageCached(String path) {
+        Image img = (Image) imgCache.get(path);
+        if (img == null && book != null) {
+            try {
+                img = book.getImage(path);
+                if (img != null) {
+                    if (imgCache.size() >= 3) imgCache.clear();
+                    imgCache.put(path, img);
+                }
+            } catch (Throwable t) {
+                imgCache.clear();
+                System.gc();
+            }
+        }
+        return img;
+    }
+
     private static String errText(Throwable e) {
         if (e instanceof OutOfMemoryError) return "Hết bộ nhớ. Chương này quá lớn cho máy.";
         return "Lỗi đọc: " + e;
     }
 
-    private int lh(int i) { return meta[i] & 0xFF; }
-    private int gap(int i) { return (meta[i] >> 8) & 0xFF; }
-    private int kind(int i) { return (meta[i] >> 16) & 3; }
+    private int lh(int i) { return meta[i] & 0x1FF; }
+    private int gap(int i) { return (meta[i] >> 9) & 0x3F; }
+    private int kind(int i) { return (meta[i] >> 15) & 7; }
     private boolean ind(int i) { return (meta[i] & (1 << 18)) != 0; }
     private boolean just(int i) { return (meta[i] & (1 << 19)) != 0; }
 
@@ -223,7 +244,7 @@ public class ReaderCanvas extends Canvas {
         if (nLines == ls.length) grow();
         ls[nLines] = s;
         le[nLines] = e;
-        meta[nLines] = (height & 0xFF) | ((gp & 0xFF) << 8) | ((knd & 3) << 16)
+        meta[nLines] = (height & 0x1FF) | ((gp & 0x3F) << 9) | ((knd & 7) << 15)
                 | (in ? (1 << 18) : 0) | (j ? (1 << 19) : 0);
         nLines++;
     }
@@ -238,7 +259,7 @@ public class ReaderCanvas extends Canvas {
             if (e < 0) e = n;
             int a = p, b = e;
             int knd = 0;
-            if (a < b && text.charAt(a) < 4 && text.charAt(a) > 0) {
+            if (a < b && text.charAt(a) < 5 && text.charAt(a) > 0) {
                 knd = text.charAt(a);
                 a++;
             }
@@ -246,6 +267,18 @@ public class ReaderCanvas extends Canvas {
             while (b > a && text.charAt(b - 1) == ' ') b--;
             if (knd == 3) {
                 addLine(a, a, 3, false, false, 7, lineH / 2);
+            } else if (knd == 4) {
+                String lineStr = text.substring(a, b);
+                int tab = lineStr.indexOf('\t');
+                String path = tab >= 0 ? lineStr.substring(0, tab) : lineStr;
+                int[] dim = book != null ? book.getImageDimensions(path) : null;
+                if (dim != null && dim[0] <= 240 && dim[1] <= 320) {
+                    int ih = Math.min(dim[1], availH);
+                    addLine(a, a + path.length(), 4, false, false, ih, lineH / 2);
+                } else {
+                    // Image too large or cannot load -> placeholder
+                    addLine(a, b, 5, false, false, lineH, lineH / 3);
+                }
             } else if (a < b) {
                 wrap(a, b, knd);
             }
@@ -255,7 +288,10 @@ public class ReaderCanvas extends Canvas {
     }
 
     private Font fontFor(int knd) {
-        return knd == 1 ? fTitle : knd == 2 ? fSub : font;
+        if (knd == 1) return fTitle;
+        if (knd == 2) return fSub;
+        if (knd == 5) return fItalic;
+        return font;
     }
 
     private void wrap(int ps, int pe, int knd) {
@@ -363,6 +399,37 @@ public class ReaderCanvas extends Canvas {
             g.drawLine(w / 4, ly, w - w / 4, ly);
             g.setColor(t[3]);
             g.fillRect(w / 2 - 2, ly - 1, 4, 3);
+            return;
+        }
+        if (knd == 4) {
+            String path = text.substring(ls[i], le[i]);
+            Image img = getImageCached(path);
+            if (img != null) {
+                int ix = (w - img.getWidth()) / 2;
+                g.drawImage(img, ix, y, Graphics.TOP | Graphics.LEFT);
+            }
+            return;
+        }
+        if (knd == 5) {
+            g.setFont(fItalic);
+            g.setColor(t[2]);
+            String full = text.substring(ls[i], le[i]);
+            int tab = full.indexOf('\t');
+            String alt = tab >= 0 ? full.substring(tab + 1) : null;
+            if (alt == null || alt.length() == 0) {
+                int sl = full.lastIndexOf('/');
+                alt = sl >= 0 ? full.substring(sl + 1) : full;
+            }
+            String label = "[Ảnh: " + alt + " (quá lớn)]";
+            while (label.length() > 6 && fItalic.stringWidth(label) > textW - 20) {
+                label = label.substring(0, label.length() - 5) + "...]";
+            }
+            int ix = margin;
+            int iy = y + (lhi - 8) / 2;
+            g.drawRect(ix, iy, 11, 8);
+            g.fillRect(ix + 2, iy - 2, 3, 2);
+            g.drawArc(ix + 3, iy + 2, 4, 4, 0, 360);
+            g.drawString(label, ix + 16, y, Graphics.TOP | Graphics.LEFT);
             return;
         }
         int len = le[i] - ls[i];
