@@ -14,7 +14,7 @@ import zipfile
 import argparse
 from PIL import Image
 
-def optimize_epub(input_path, output_path=None, max_w=232, max_h=280, jpeg_quality=80):
+def optimize_epub(input_path, output_path=None, max_w=232, max_h=280, jpeg_quality=60, grayscale=False):
     if not os.path.isfile(input_path):
         print(f"Lỗi: Không tìm thấy file {input_path}")
         return False
@@ -24,7 +24,7 @@ def optimize_epub(input_path, output_path=None, max_w=232, max_h=280, jpeg_quali
         output_path = f"{base}_c201{ext}"
 
     print(f"Đang xử lý: {os.path.basename(input_path)}")
-    print(f"Kích thước tối đa: {max_w}x{max_h} px | Chất lượng JPEG: {jpeg_quality}")
+    print(f"Kích thước tối đa: {max_w}x{max_h} px | Chất lượng JPEG: {jpeg_quality} | Trắng đen: {grayscale}")
 
     orig_size = os.path.getsize(input_path)
     img_count = 0
@@ -56,6 +56,9 @@ def optimize_epub(input_path, output_path=None, max_w=232, max_h=280, jpeg_quali
                     if need_resize:
                         img.thumbnail((max_w, max_h), Image.Resampling.LANCZOS)
                         resized_count += 1
+
+                    if grayscale and img.mode != 'L':
+                        img = img.convert('L')
 
                     out_buf = io.BytesIO()
                     fmt = img.format if img.format else ('PNG' if lower.endswith('.png') else 'JPEG')
@@ -106,10 +109,11 @@ def main():
     parser.add_argument("output", nargs="?", default=None, help="Đường dẫn file EPUB kết quả (mặc định: thêm _c201)")
     parser.add_argument("--max-width", type=int, default=232, help="Chiều rộng tối đa (mặc định: 232)")
     parser.add_argument("--max-height", type=int, default=280, help="Chiều cao tối đa (mặc định: 280)")
-    parser.add_argument("--quality", type=int, default=80, help="Chất lượng nén JPEG 1-100 (mặc định: 80)")
+    parser.add_argument("--quality", type=int, default=60, help="Chất lượng nén JPEG 1-100 (mặc định: 60)")
+    parser.add_argument("--grayscale", "-g", action="store_true", help="Chuyển ảnh sang trắng đen để giảm dung lượng tối đa")
 
     args = parser.parse_args()
-    success = optimize_epub(args.input, args.output, args.max_width, args.max_height, args.quality)
+    success = optimize_epub(args.input, args.output, args.max_width, args.max_height, args.quality, args.grayscale)
     sys.exit(0 if success else 1)
 
 if __name__ == "__main__":

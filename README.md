@@ -33,11 +33,14 @@ Trước khi chép sách vào thẻ nhớ điện thoại, bạn có thể chạ
 # Cài Pillow nếu chưa có
 pip install Pillow
 
-# Tối ưu một file EPUB (kết quả lưu thành <ten_sach>_c201.epub)
+# Tối ưu một file EPUB (mặc định nén JPEG quality 60, mỗi ảnh chỉ còn 4-8 KB, load tức thì trên C2-01)
 ./tools/optimize-epub.py "/duong/dan/sach.epub"
 
-# Hoặc chỉ định rõ file xuất:
-./tools/optimize-epub.py "/duong/dan/sach.epub" "/duong/dan/sach_nokia.epub"
+# Tùy chọn chuyển ảnh sang trắng đen để siêu nhẹ:
+./tools/optimize-epub.py "/duong/dan/sach.epub" --grayscale
+
+# Xem trước trang sách trên máy tính (xuất file ảnh 240x320 Nokia C2-01):
+./tools/preview.sh "/duong/dan/sach_c201.epub" 0
 ```
 
 ## Build & Chạy thử
