@@ -78,6 +78,7 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
 
     // ------------------------------------------------------------ open
     private void openFile(final String url) {
+        Store.putLong("t:" + url, System.currentTimeMillis());
         showWait("Đang mở sách...");
         if (reader != null) reader.closeBook();
         toc = null;
@@ -237,18 +238,43 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
                 listDesktopDir(curDir, names);
             }
         }
-        // sort: drives first, then dirs, then alphabetical
         int n = names.size();
         String[] a = new String[n];
         names.copyInto(a);
-        for (int i = 1; i < n; i++) {
-            String x = a[i];
-            int j = i - 1;
-            while (j >= 0 && compare(a[j], x) > 0) {
-                a[j + 1] = a[j];
-                j--;
+        if (!chooseMode && curDir != null) {
+            // Sort library by most recently accessed first
+            long[] times = new long[n];
+            String lastUrl = Store.get("last", "");
+            for (int i = 0; i < n; i++) {
+                String u = curDir + a[i];
+                long t = Store.getLong("t:" + u, 0);
+                if (t == 0 && u.equals(lastUrl)) t = Long.MAX_VALUE;
+                else if (t == 0 && Store.get("p:" + u, "").length() > 0) t = 1;
+                times[i] = t;
             }
-            a[j + 1] = x;
+            for (int i = 1; i < n; i++) {
+                String x = a[i];
+                long tx = times[i];
+                int j = i - 1;
+                while (j >= 0 && compareBooks(times[j], a[j], tx, x) > 0) {
+                    a[j + 1] = a[j];
+                    times[j + 1] = times[j];
+                    j--;
+                }
+                a[j + 1] = x;
+                times[j + 1] = tx;
+            }
+        } else {
+            // sort: drives first, then dirs, then alphabetical
+            for (int i = 1; i < n; i++) {
+                String x = a[i];
+                int j = i - 1;
+                while (j >= 0 && compare(a[j], x) > 0) {
+                    a[j + 1] = a[j];
+                    j--;
+                }
+                a[j + 1] = x;
+            }
         }
         entries = new Vector();
         String title;
@@ -283,6 +309,13 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
         }
         browser = ls;
         display.setCurrent(browser);
+    }
+
+    private static int compareBooks(long t1, String name1, long t2, String name2) {
+        if (t1 != t2) {
+            return t1 < t2 ? 1 : -1;
+        }
+        return name1.toLowerCase().compareTo(name2.toLowerCase());
     }
 
     private static int compare(String x, String y) {

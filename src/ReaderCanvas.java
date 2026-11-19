@@ -118,6 +118,7 @@ public class ReaderCanvas extends Canvas {
             partIdx = 0;
         }
         Store.put("last", url);
+        Store.putLong("t:" + url, System.currentTimeMillis());
         load(ch, pOff, OFFSET, off);
     }
 
@@ -998,6 +999,7 @@ public class ReaderCanvas extends Canvas {
     public void saveState() {
         if (book != null && url != null && !busy && nLines > 0) {
             Store.put("p:" + url, chapter + "," + partOff + "," + ls[Math.min(top, nLines - 1)]);
+            Store.putLong("t:" + url, System.currentTimeMillis());
         }
     }
 

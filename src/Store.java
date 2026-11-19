@@ -57,6 +57,18 @@ public class Store {
         put(key, String.valueOf(v));
     }
 
+    public static long getLong(String key, long def) {
+        try {
+            return Long.parseLong(get(key, ""));
+        } catch (Exception e) {
+            return def;
+        }
+    }
+
+    public static void putLong(String key, long v) {
+        put(key, String.valueOf(v));
+    }
+
     private static void close(RecordStore rs) {
         if (rs != null) try { rs.closeRecordStore(); } catch (Exception e) { }
     }
