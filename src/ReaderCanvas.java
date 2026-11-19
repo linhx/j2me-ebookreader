@@ -23,7 +23,7 @@ public class ReaderCanvas extends Canvas {
     private int nLines = 0;
     private int top = 0;
 
-    private Font font, small, fTitle, fSub, fItalic, fCaption;
+    private Font font, small, fTitle, fSub, fItalic, fCaption, fFootnote;
     private int fontSize, theme;
     private int lineH, linesPerPage, margin = 7, footerH, textW, availH;
     private volatile boolean busy = true;
@@ -69,6 +69,8 @@ public class ReaderCanvas extends Canvas {
         fItalic = Font.getFont(Font.FACE_PROPORTIONAL, Font.STYLE_ITALIC, sz);
         int capSize = fontSize == 2 ? Font.SIZE_MEDIUM : Font.SIZE_SMALL;
         fCaption = Font.getFont(Font.FACE_PROPORTIONAL, Font.STYLE_ITALIC, capSize);
+        int noteSize = fontSize == 2 ? Font.SIZE_MEDIUM : Font.SIZE_SMALL;
+        fFootnote = Font.getFont(Font.FACE_PROPORTIONAL, Font.STYLE_PLAIN, noteSize);
         footerH = small.getHeight() + 8;
     }
 
@@ -804,7 +806,7 @@ public class ReaderCanvas extends Canvas {
 
         int dw = w - 24;
         int dx = 12;
-        Font bf = font;
+        Font bf = fFootnote;
         int maxBodyH = h - 70;
         java.util.Vector bodyLines = wrapNoteBody(activeNote.body, dw - 24, bf);
         int lineStep = bf.getHeight() + 2;
@@ -823,8 +825,9 @@ public class ReaderCanvas extends Canvas {
         int barH = 24;
         Ui.vgrad(g, dx + 1, dy + 1, dw - 2, barH, Ui.RED1, Ui.RED2);
         g.setColor(0xFFFFFF);
-        g.setFont(fSub);
-        g.drawString("Chú thích [" + activeNote.label + "]", dx + 8, dy + 4, Graphics.TOP | Graphics.LEFT);
+        Font fHeader = (fontSize == 2) ? fSub : Font.getFont(Font.FACE_PROPORTIONAL, Font.STYLE_BOLD, Font.SIZE_SMALL);
+        g.setFont(fHeader);
+        g.drawString("Chú thích [" + activeNote.label + "]", dx + 8, dy + (barH - fHeader.getHeight()) / 2, Graphics.TOP | Graphics.LEFT);
 
         // Body text
         g.setFont(bf);
