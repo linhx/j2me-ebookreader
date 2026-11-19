@@ -68,6 +68,11 @@ public class PreviewBook {
                 // Press 9 to navigate to footnote, then KEY_NUM5 (or OK) to open dialog
                 mHandle.invoke(rc, new Object[] { new Integer(javax.microedition.lcdui.Canvas.KEY_NUM9), Boolean.FALSE });
                 mHandle.invoke(rc, new Object[] { new Integer(javax.microedition.lcdui.Canvas.KEY_NUM5), Boolean.FALSE });
+            } else if ("note1".equalsIgnoreCase(sim)) {
+                // Press 9 twice to navigate to footnote 2, then KEY_NUM5 to open dialog
+                mHandle.invoke(rc, new Object[] { new Integer(javax.microedition.lcdui.Canvas.KEY_NUM9), Boolean.FALSE });
+                mHandle.invoke(rc, new Object[] { new Integer(javax.microedition.lcdui.Canvas.KEY_NUM9), Boolean.FALSE });
+                mHandle.invoke(rc, new Object[] { new Integer(javax.microedition.lcdui.Canvas.KEY_NUM5), Boolean.FALSE });
             } else if ("nav9".equalsIgnoreCase(sim)) {
                 mHandle.invoke(rc, new Object[] { new Integer(javax.microedition.lcdui.Canvas.KEY_NUM9), Boolean.FALSE });
             }

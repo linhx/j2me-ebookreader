@@ -687,6 +687,16 @@ public class ReaderCanvas extends Canvas {
                 repaint();
                 return;
             }
+            if (a == LEFT || code == KEY_NUM4) {
+                noteScroll = Math.max(0, noteScroll - 4);
+                repaint();
+                return;
+            }
+            if (a == RIGHT || code == KEY_NUM6) {
+                noteScroll += 4;
+                repaint();
+                return;
+            }
             activeNote = null;
             repaint();
             return;
@@ -766,8 +776,8 @@ public class ReaderCanvas extends Canvas {
         int dw = w - 24;
         int dx = 12;
         Font bf = font;
-        int maxBodyH = h - 80;
-        java.util.Vector bodyLines = wrapNoteBody(activeNote.body, dw - 16, bf);
+        int maxBodyH = h - 70;
+        java.util.Vector bodyLines = wrapNoteBody(activeNote.body, dw - 24, bf);
         int lineStep = bf.getHeight() + 2;
         int visibleLines = Math.min(bodyLines.size(), maxBodyH / lineStep);
         if (visibleLines < 1) visibleLines = 1;
@@ -801,13 +811,19 @@ public class ReaderCanvas extends Canvas {
             by += lineStep;
         }
 
+        // Scrollbar if content exceeds visible area
+        if (bodyLines.size() > visibleLines) {
+            Ui.scrollbar(g, dx + dw - 7, dy + barH + 5, boxH - barH - 28,
+                    bodyLines.size(), noteScroll, visibleLines, t[2], t[3]);
+        }
+
         // Footer
         int fy = dy + boxH - 20;
         g.setColor(t[2]);
         g.drawLine(dx + 2, fy, dx + dw - 2, fy);
         g.setFont(small);
         g.setColor(t[3]);
-        String footerText = maxScroll > 0 ? "Cuộn: 2/8 | OK: Đóng" : "Bấm OK để đóng";
+        String footerText = maxScroll > 0 ? "Cuộn: Lên/Xuống (2/8) | OK: Đóng" : "Bấm OK để đóng";
         g.drawString(footerText, dx + dw / 2, fy + 4, Graphics.TOP | Graphics.HCENTER);
     }
 
