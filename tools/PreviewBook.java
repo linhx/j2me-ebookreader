@@ -49,9 +49,28 @@ public class PreviewBook {
         // Wait for background loader thread
         Field fBusy = rc.getClass().getDeclaredField("busy");
         fBusy.setAccessible(true);
+        Thread.sleep(200);
         for (int i = 0; i < 50; i++) {
-            Thread.sleep(100);
             if (!fBusy.getBoolean(rc)) break;
+            Thread.sleep(100);
+        }
+
+        Field fNotes = rc.getClass().getDeclaredField("notes");
+        fNotes.setAccessible(true);
+        Object[] notesArr = (Object[]) fNotes.get(rc);
+        System.out.println("DEBUG: notesArr count = " + (notesArr == null ? "null" : "" + notesArr.length));
+
+        if (args.length > 3) {
+            String sim = args[3];
+            Method mHandle = rc.getClass().getDeclaredMethod("handle", new Class[] { int.class, boolean.class });
+            mHandle.setAccessible(true);
+            if ("note".equalsIgnoreCase(sim)) {
+                // Press 9 to navigate to footnote, then KEY_NUM5 (or OK) to open dialog
+                mHandle.invoke(rc, new Object[] { new Integer(javax.microedition.lcdui.Canvas.KEY_NUM9), Boolean.FALSE });
+                mHandle.invoke(rc, new Object[] { new Integer(javax.microedition.lcdui.Canvas.KEY_NUM5), Boolean.FALSE });
+            } else if ("nav9".equalsIgnoreCase(sim)) {
+                mHandle.invoke(rc, new Object[] { new Integer(javax.microedition.lcdui.Canvas.KEY_NUM9), Boolean.FALSE });
+            }
         }
 
         PlatformImage img = new PlatformImage(240, 320);

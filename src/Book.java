@@ -27,8 +27,21 @@ public abstract class Book {
      */
     public abstract String chapter(int i, int skipChars, int[] outMeta) throws IOException;
 
+    public static class Note {
+        public int charOffset;
+        public String label;
+        public String body;
+
+        public Note(int charOffset, String label, String body) {
+            this.charOffset = charOffset;
+            this.label = label;
+            this.body = body;
+        }
+    }
+
     public void close() { }
 
+    public Note[] getNotes() { return null; }
     public int[] getImageDimensions(String path) { return null; }
     public javax.microedition.lcdui.Image getImage(String path) { return null; }
 
@@ -178,6 +191,7 @@ public abstract class Book {
     static class EpubBook extends Book {
         private ZipReader zip;
         private String[] files;
+        private Note[] currentNotes;
 
         EpubBook(String url) throws IOException {
             zip = new ZipReader(url);
@@ -313,10 +327,22 @@ public abstract class Book {
             zip.close();
         }
 
+        public Note[] getNotes() {
+            return currentNotes;
+        }
+
         public String chapter(int i, int skipChars, int[] outMeta) throws IOException {
             InputStream in = zip.openStream(files[i]);
             try {
-                return Html.toText(in, files[i], skipChars, Html.MAX_PART_CHARS, outMeta);
+                Vector noteList = new Vector();
+                String text = Html.toText(in, files[i], skipChars, Html.MAX_PART_CHARS, outMeta, noteList);
+                if (noteList.size() > 0) {
+                    currentNotes = new Note[noteList.size()];
+                    noteList.copyInto(currentNotes);
+                } else {
+                    currentNotes = null;
+                }
+                return text;
             } finally {
                 in.close();
             }

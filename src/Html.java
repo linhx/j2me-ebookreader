@@ -1,6 +1,8 @@
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Hashtable;
+import java.util.Vector;
 
 /**
  * Converts HTML/XHTML to plain text with newline-separated paragraphs.
@@ -29,6 +31,7 @@ public class Html {
     private boolean firstByte = true;
 
     private String baseFile;
+    private Vector outNotes;
     private char[] out;
     private int outLen = 0;
     private int pos = 0; // total logical chars emitted from start of stream
@@ -52,18 +55,23 @@ public class Html {
      *   outMeta[0] = 1 if there is more visible text after this part, 0 otherwise
      *   outMeta[1] = next skipChars offset
      */
-    public static String toText(InputStream in, String baseFile, int skipChars, int maxChars, int[] outMeta) throws IOException {
+    public static String toText(InputStream in, String baseFile, int skipChars, int maxChars, int[] outMeta, Vector outNotes) throws IOException {
         Html p = new Html();
         p.in = in;
         p.baseFile = baseFile;
         p.skipChars = skipChars;
         p.maxChars = maxChars;
+        p.outNotes = outNotes;
         p.out = new char[Math.min(maxChars + 64, 4096)];
         return p.parse(outMeta);
     }
 
+    public static String toText(InputStream in, String baseFile, int skipChars, int maxChars, int[] outMeta) throws IOException {
+        return toText(in, baseFile, skipChars, maxChars, outMeta, null);
+    }
+
     public static String toText(InputStream in, int skipChars, int maxChars, int[] outMeta) throws IOException {
-        return toText(in, null, skipChars, maxChars, outMeta);
+        return toText(in, null, skipChars, maxChars, outMeta, null);
     }
 
     private int readByte() throws IOException {
@@ -162,6 +170,12 @@ public class Html {
         int stopLen = 0;
         char[] nameBuf = new char[16];
         char[] entBuf = new char[12];
+        Hashtable noteBodies = new Hashtable();
+        Vector noteRefs = new Vector();
+        int noteSeq = 0;
+        boolean inNoteRef = false;
+        String currentNoteTarget = null;
+        int noteRefStart = 0;
 
         for (;;) {
             int ci = nextChar();
@@ -197,8 +211,9 @@ public class Html {
                     t = nextChar();
                 }
                 String name = nlen > 0 ? new String(nameBuf, 0, nlen) : "";
-                String imgSrc = null, imgAlt = null;
-                if (!closing && (name.equals("img") || name.equals("image"))) {
+                String imgSrc = null, imgAlt = null, linkHref = null, tagId = null, epubType = null;
+                boolean shouldParseAttrs = !closing && (name.equals("img") || name.equals("image") || name.equals("a") || name.equals("aside") || name.equals("section"));
+                if (shouldParseAttrs) {
                     StringBuffer an = new StringBuffer();
                     StringBuffer av = new StringBuffer();
                     while (t >= 0 && t != '>') {
@@ -230,10 +245,16 @@ public class Html {
                             }
                             String aName = an.toString();
                             String aVal = av.toString();
-                            if (aName.equals("src") || aName.equals("href") || aName.endsWith(":href")) {
+                            if (aName.equals("src") || (name.equals("image") && (aName.equals("href") || aName.endsWith(":href")))) {
                                 if (imgSrc == null) imgSrc = aVal;
                             } else if (aName.equals("alt") || aName.equals("title")) {
                                 if (imgAlt == null) imgAlt = aVal;
+                            } else if (aName.equals("href") || aName.endsWith(":href")) {
+                                if (linkHref == null) linkHref = aVal;
+                            } else if (aName.equals("id")) {
+                                if (tagId == null) tagId = aVal;
+                            } else if (aName.equals("epub:type") || aName.equals("type") || aName.equals("class")) {
+                                if (epubType == null) epubType = aVal.toLowerCase();
                             }
                         }
                     }
@@ -254,6 +275,7 @@ public class Html {
                 }
                 boolean selfClose = !closing && (lastNonSpace == '/');
                 if (imgSrc != null && imgSrc.length() > 0) {
+                    if (stopping) continue;
                     String full = baseFile != null ? Util.resolve(baseFile, imgSrc) : imgSrc;
                     if (marked && lineStart) {
                         unemit();
@@ -276,12 +298,61 @@ public class Html {
                     marked = false;
                     continue;
                 }
+                boolean isFootnoteContainer = !closing && epubType != null
+                        && (epubType.indexOf("footnotes") >= 0 || epubType.indexOf("endnotes") >= 0);
+                if (isFootnoteContainer) {
+                    continue;
+                }
+                boolean isFootnoteTag = !closing && (name.equals("aside")
+                        || (epubType != null && (epubType.equals("footnote") || epubType.equals("endnote"))));
+                if (isFootnoteTag) {
+                    String body = readTextUntilClose(name);
+                    if (tagId != null && body.length() > 0) {
+                        noteBodies.put(tagId, body);
+                    }
+                    if (stopping && (outNotes == null || allRefsFound(noteRefs, noteBodies))) {
+                        break;
+                    }
+                    continue;
+                }
+                if (!stopping && !closing && name.equals("a")) {
+                    if (linkHref != null && linkHref.startsWith("#")) {
+                        String tid = linkHref.substring(1);
+                        boolean isRef = (epubType != null && epubType.indexOf("noteref") >= 0)
+                                || tid.startsWith("n") || tid.startsWith("fn") || tid.indexOf("note") >= 0;
+                        if (isRef) {
+                            inNoteRef = true;
+                            currentNoteTarget = tid;
+                            noteRefStart = outLen;
+                        }
+                    }
+                }
+                if (!stopping && closing && name.equals("a")) {
+                    if (inNoteRef) {
+                        inNoteRef = false;
+                        int noteLen = outLen - noteRefStart;
+                        String lbl;
+                        if (noteLen == 0) {
+                            lbl = "" + (noteSeq + 1);
+                            emit('[');
+                            for (int k = 0; k < lbl.length(); k++) emit(lbl.charAt(k));
+                            emit(']');
+                        } else {
+                            lbl = new String(out, noteRefStart, noteLen).trim();
+                            if (lbl.startsWith("[") && lbl.endsWith("]")) lbl = lbl.substring(1, lbl.length() - 1);
+                            if (lbl.length() == 0) lbl = "" + (noteSeq + 1);
+                        }
+                        noteRefs.addElement(new Object[] {new Integer(noteRefStart), currentNoteTarget, lbl});
+                        noteSeq++;
+                    }
+                }
                 if (!closing && !selfClose && (name.equals("script") || name.equals("style") || name.equals("head"))) {
                     skipUntilClose(name);
                     continue;
                 }
                 if (isBlock(name)) {
                     if (name.equals("title")) continue;
+                    if (stopping) continue;
                     if (marked && lineStart) {
                         unemit();
                         marked = false;
@@ -318,12 +389,10 @@ public class Html {
                         if (cp == 0xA0) cp = ' ';
                         if (cp == ' ') { space = true; continue; }
                         if (stopping) {
-                            if (outMeta != null) {
-                                outMeta[0] = 1;
-                                outMeta[1] = skipChars + stopLen;
+                            if (outNotes == null || allRefsFound(noteRefs, noteBodies)) {
+                                break;
                             }
-                            outLen = stopLen;
-                            break;
+                            continue;
                         }
                         if (space && !lineStart) emit(' ');
                         space = false;
@@ -347,12 +416,10 @@ public class Html {
             }
             if (c < 32) continue;
             if (stopping) {
-                if (outMeta != null) {
-                    outMeta[0] = 1;
-                    outMeta[1] = skipChars + stopLen;
+                if (outNotes == null || allRefsFound(noteRefs, noteBodies)) {
+                    break;
                 }
-                outLen = stopLen;
-                break;
+                continue;
             }
             if (space && !lineStart) emit(' ');
             space = false;
@@ -364,13 +431,76 @@ public class Html {
                 stopLen = outLen;
             }
         }
-        if (stopping && outMeta != null && outMeta[0] == 0) {
+        if (stopping) {
+            if (outMeta != null) {
+                outMeta[0] = 1;
+                outMeta[1] = skipChars + stopLen;
+            }
             outLen = stopLen;
+        }
+        if (outNotes != null) {
+            for (int i = 0; i < noteRefs.size(); i++) {
+                Object[] r = (Object[]) noteRefs.elementAt(i);
+                int off = ((Integer) r[0]).intValue();
+                String tid = (String) r[1];
+                String lbl = (String) r[2];
+                String body = (String) noteBodies.get(tid);
+                if (body != null && body.length() > 0) {
+                    outNotes.addElement(new Book.Note(off, lbl, body));
+                }
+            }
         }
         char[] r = out;
         out = null;
         bbuf = null;
         return new String(r, 0, outLen);
+    }
+
+    private String readTextUntilClose(String tag) throws IOException {
+        StringBuffer sb = new StringBuffer();
+        char[] nb = new char[16];
+        char[] eb = new char[12];
+        for (;;) {
+            int ci = nextChar();
+            if (ci < 0) break;
+            char c = (char) ci;
+            if (c == '<') {
+                int c1 = nextChar();
+                boolean close = (c1 == '/');
+                int t = close ? nextChar() : c1;
+                int nlen = 0;
+                while (t >= 0 && isNameChar((char) t)) {
+                    if (nlen < nb.length) nb[nlen++] = Character.toLowerCase((char) t);
+                    t = nextChar();
+                }
+                while (t >= 0 && t != '>') t = nextChar();
+                String tn = nlen > 0 ? new String(nb, 0, nlen) : "";
+                if (close && tn.equals(tag)) break;
+                if (tn.equals("p") || tn.equals("br") || tn.equals("div")) {
+                    if (sb.length() > 0 && sb.charAt(sb.length() - 1) != ' ') sb.append(' ');
+                }
+                continue;
+            }
+            if (c == '&') {
+                int elen = 0;
+                int x = nextChar();
+                while (x >= 0 && x != ';' && x != '<' && x != ' ' && x != '\n' && elen < eb.length) {
+                    eb[elen++] = (char) x;
+                    x = nextChar();
+                }
+                if (x == ';' && elen > 0) {
+                    int cp = entity(new String(eb, 0, elen));
+                    if (cp >= 0) c = (char) cp;
+                }
+            }
+            if (c == '\r' || c == '\n' || c == '\t') c = ' ';
+            if (c == ' ') {
+                if (sb.length() > 0 && sb.charAt(sb.length() - 1) != ' ') sb.append(' ');
+            } else {
+                sb.append(c);
+            }
+        }
+        return sb.toString().trim();
     }
 
     private void skipUntilClose(String name) throws IOException {
@@ -394,6 +524,16 @@ public class Html {
                 }
             }
         }
+    }
+
+    private static boolean allRefsFound(Vector refs, Hashtable bodies) {
+        if (refs == null || refs.size() == 0) return true;
+        for (int i = 0; i < refs.size(); i++) {
+            Object[] r = (Object[]) refs.elementAt(i);
+            String tid = (String) r[1];
+            if (tid != null && !bodies.containsKey(tid)) return false;
+        }
+        return true;
     }
 
     private static boolean isNameChar(char c) {

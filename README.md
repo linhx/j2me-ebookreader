@@ -63,9 +63,10 @@ java -Dfile.encoding=ISO_8859_1 -jar /mnt/data/apps/freej2me-plus/build/freej2me
 ## Phím điều khiển khi đọc
 | Phím | Chức năng |
 |---|---|
-| `Lên` / `Xuống` (`2` / `8`) | Cuộn 3 dòng |
-| `Trái` / `Phải` (`4` / `6`), `OK` (`5`) | Lùi / tiến trang (tự chuyển phần/chương khi hết) |
+| `Lên` / `Xuống` (`2` / `8`) | Cuộn 3 dòng (khi mở chú thích: cuộn nội dung chú thích) |
+| `Trái` / `Phải` (`4` / `6`), `OK` (`5`) | Lùi / tiến trang (tự chuyển phần/chương khi hết; khi chọn chú thích: `OK` mở/đóng hộp thoại) |
 | `1` / `3` | Chương trước / chương sau |
+| `7` / `9` | Chú thích trước / chú thích tiếp theo (tự nhảy đến dòng chú thích & viền nổi bật) |
 | Giữ `*` + `Lên` / `Xuống` | Tăng / giảm cỡ chữ (có thông báo nhanh trên màn hình) |
 | Bấm `*` nhanh | Đổi vòng cỡ chữ (nhỏ → vừa → lớn) |
 | `#` | Đổi giao diện (Sáng → Tối → Sepia) |

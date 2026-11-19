@@ -34,6 +34,10 @@ public class ReaderCanvas extends Canvas {
     private String toast;
     private long toastUntil;
     private java.util.Hashtable imgCache = new java.util.Hashtable();
+    private Book.Note[] notes;
+    private int selectedNote = -1;
+    private Book.Note activeNote = null;
+    private int noteScroll = 0;
 
     private static final int[][] THEMES = {
         // background, text, dim, accent
@@ -146,6 +150,10 @@ public class ReaderCanvas extends Canvas {
                     hasMorePart = outMeta[0] == 1;
                     nextPartOff = outMeta[1];
                     layout();
+                    notes = book != null ? book.getNotes() : null;
+                    selectedNote = -1;
+                    activeNote = null;
+                    noteScroll = 0;
                     if (mode == START) top = 0;
                     else if (mode == END) top = lastTop();
                     else top = lineAt(off);
@@ -167,6 +175,10 @@ public class ReaderCanvas extends Canvas {
         nLines = 0;
         top = 0;
         imgCache.clear();
+        notes = null;
+        selectedNote = -1;
+        activeNote = null;
+        noteScroll = 0;
         if (ls.length > 256) {
             ls = new int[256];
             le = new int[256];
@@ -386,13 +398,29 @@ public class ReaderCanvas extends Canvas {
         g.fillRect(0, fy + 1, (int) (w * frac), 2);
         g.setFont(small);
         g.setColor(theme == 1 ? 0xE0E0E0 : 0x202020);
-        g.drawString((chapter + 1) + "/" + total + "  " + (int) (frac * 100) + "%", w / 2, fy + 4,
-                Graphics.TOP | Graphics.HCENTER);
+        if (selectedNote >= 0 && notes != null && selectedNote < notes.length) {
+            g.setColor(t[3]);
+            g.drawString("★ Chú thích [" + notes[selectedNote].label + "] (OK: Đọc)", w / 2, fy + 4,
+                    Graphics.TOP | Graphics.HCENTER);
+        } else {
+            g.drawString((chapter + 1) + "/" + total + "  " + (int) (frac * 100) + "%", w / 2, fy + 4,
+                    Graphics.TOP | Graphics.HCENTER);
+        }
+        if (activeNote != null) {
+            drawNoteDialog(g, w, h, t);
+        }
     }
 
     private void drawLine(Graphics g, int i, int y, int w, int[] t) {
         int knd = kind(i);
         int lhi = lh(i);
+        if (selectedNote >= 0 && notes != null && selectedNote < notes.length) {
+            int noff = notes[selectedNote].charOffset;
+            if (noff >= ls[i] && noff < le[i]) {
+                g.setColor(t[3]);
+                g.drawRect(margin - 2, y - 1, textW + 4, lhi + 1);
+            }
+        }
         if (knd == 3) {
             g.setColor(t[2]);
             int ly = y + lhi / 2;
@@ -590,12 +618,29 @@ public class ReaderCanvas extends Canvas {
     }
 
     private void handle(int code, boolean repeat) {
+        if (activeNote != null) {
+            int a = navAction(code);
+            if (a == UP || code == KEY_NUM2) {
+                if (noteScroll > 0) { noteScroll--; repaint(); }
+                return;
+            }
+            if (a == DOWN || code == KEY_NUM8) {
+                noteScroll++;
+                repaint();
+                return;
+            }
+            activeNote = null;
+            repaint();
+            return;
+        }
         if (code == -6 || code == -21) { midlet.showMenu(); return; }
         if (code == -7 || code == -22) { midlet.showToc(); return; }
         if (busy || book == null) return;
         int a = navAction(code);
         if (code == KEY_NUM1) { gotoChapter(chapter - 1, START); return; }
         if (code == KEY_NUM3) { gotoChapter(chapter + 1, START); return; }
+        if (code == KEY_NUM7) { navNote(-1); return; }
+        if (code == KEY_NUM9) { navNote(1); return; }
         if (code == KEY_STAR) { starHeld = true; return; }
         if (starHeld && (a == UP || a == DOWN)) {
             starUsed = true;
@@ -607,13 +652,142 @@ public class ReaderCanvas extends Canvas {
         }
         if (code == KEY_POUND) { setTheme((theme + 1) % THEMES.length); return; }
         switch (a) {
-            case UP: scroll(repeat ? -5 : -3); break;
-            case DOWN: scroll(repeat ? 5 : 3); break;
-            case LEFT: page(-1, repeat); break;
-            case RIGHT:
-            case FIRE: page(1, repeat); break;
+            case UP: selectedNote = -1; scroll(repeat ? -5 : -3); break;
+            case DOWN: selectedNote = -1; scroll(repeat ? 5 : 3); break;
+            case LEFT: selectedNote = -1; page(-1, repeat); break;
+            case RIGHT: selectedNote = -1; page(1, repeat); break;
+            case FIRE:
+                if (selectedNote >= 0 && notes != null && selectedNote < notes.length) {
+                    activeNote = notes[selectedNote];
+                    noteScroll = 0;
+                    repaint();
+                    return;
+                }
+                selectedNote = -1;
+                page(1, repeat);
+                break;
             default: break;
         }
+    }
+
+    private void navNote(int dir) {
+        if (notes == null || notes.length == 0) {
+            showToast("Chương này không có chú thích");
+            return;
+        }
+        if (selectedNote < 0) {
+            int curOff = ls[top];
+            selectedNote = 0;
+            for (int i = 0; i < notes.length; i++) {
+                if (notes[i].charOffset >= curOff) {
+                    selectedNote = i;
+                    break;
+                }
+            }
+        } else {
+            selectedNote += dir;
+            if (selectedNote >= notes.length) selectedNote = 0;
+            else if (selectedNote < 0) selectedNote = notes.length - 1;
+        }
+        Book.Note n = notes[selectedNote];
+        int targetLine = lineAt(n.charOffset);
+        if (targetLine < top || targetLine >= top + fits(top)) {
+            top = Math.max(0, targetLine);
+        }
+        showToast("Chú thích [" + n.label + "/" + notes.length + "] - Bấm OK để đọc");
+        repaint();
+    }
+
+    private void drawNoteDialog(Graphics g, int w, int h, int[] t) {
+        // Semi-transparent / darkened overlay
+        g.setColor(0x000000);
+        for (int y = 0; y < h; y += 2) {
+            g.drawLine(0, y, w, y);
+        }
+
+        int dw = w - 24;
+        int dx = 12;
+        Font bf = font;
+        int maxBodyH = h - 80;
+        java.util.Vector bodyLines = wrapNoteBody(activeNote.body, dw - 16, bf);
+        int lineStep = bf.getHeight() + 2;
+        int visibleLines = Math.min(bodyLines.size(), maxBodyH / lineStep);
+        if (visibleLines < 1) visibleLines = 1;
+        int boxH = visibleLines * lineStep + 54;
+        int dy = (h - boxH) / 2;
+
+        // Dialog background
+        g.setColor(t[0]);
+        g.fillRoundRect(dx, dy, dw, boxH, 8, 8);
+        g.setColor(t[3]);
+        g.drawRoundRect(dx, dy, dw, boxH, 8, 8);
+
+        // Header bar
+        int barH = 24;
+        Ui.vgrad(g, dx + 1, dy + 1, dw - 2, barH, Ui.RED1, Ui.RED2);
+        g.setColor(0xFFFFFF);
+        g.setFont(fSub);
+        g.drawString("Chú thích [" + activeNote.label + "]", dx + 8, dy + 4, Graphics.TOP | Graphics.LEFT);
+
+        // Body text
+        g.setFont(bf);
+        g.setColor(t[1]);
+        int by = dy + barH + 6;
+        int maxScroll = Math.max(0, bodyLines.size() - visibleLines);
+        if (noteScroll > maxScroll) noteScroll = maxScroll;
+        if (noteScroll < 0) noteScroll = 0;
+
+        for (int i = noteScroll; i < bodyLines.size() && i < noteScroll + visibleLines; i++) {
+            String line = (String) bodyLines.elementAt(i);
+            g.drawString(line, dx + 8, by, Graphics.TOP | Graphics.LEFT);
+            by += lineStep;
+        }
+
+        // Footer
+        int fy = dy + boxH - 20;
+        g.setColor(t[2]);
+        g.drawLine(dx + 2, fy, dx + dw - 2, fy);
+        g.setFont(small);
+        g.setColor(t[3]);
+        String footerText = maxScroll > 0 ? "Cuộn: 2/8 | OK: Đóng" : "Bấm OK để đóng";
+        g.drawString(footerText, dx + dw / 2, fy + 4, Graphics.TOP | Graphics.HCENTER);
+    }
+
+    private java.util.Vector wrapNoteBody(String text, int maxW, Font f) {
+        java.util.Vector lines = new java.util.Vector();
+        if (text == null || text.length() == 0) {
+            lines.addElement("(Không có nội dung)");
+            return lines;
+        }
+        int len = text.length();
+        int pos = 0;
+        while (pos < len) {
+            int w = 0, lastSpace = -1, i = pos;
+            while (i < len) {
+                char c = text.charAt(i);
+                if (c == '\n') break;
+                int cw = f.charWidth(c);
+                if (w + cw > maxW) break;
+                w += cw;
+                if (c == ' ') lastSpace = i;
+                i++;
+            }
+            if (i >= len) {
+                lines.addElement(text.substring(pos, len));
+                break;
+            } else if (text.charAt(i) == '\n') {
+                lines.addElement(text.substring(pos, i));
+                pos = i + 1;
+            } else if (lastSpace > pos) {
+                lines.addElement(text.substring(pos, lastSpace));
+                pos = lastSpace + 1;
+            } else {
+                if (i == pos) i++;
+                lines.addElement(text.substring(pos, i));
+                pos = i;
+            }
+        }
+        return lines;
     }
 
     private void scroll(int n) {
