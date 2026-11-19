@@ -7,9 +7,10 @@ public class Store {
 
     public static synchronized String get(String key, String def) {
         RecordStore rs = null;
+        RecordEnumeration en = null;
         try {
             rs = RecordStore.openRecordStore(NAME, true);
-            RecordEnumeration en = rs.enumerateRecords(null, null, false);
+            en = rs.enumerateRecords(null, null, false);
             String prefix = key + "\t";
             while (en.hasNextElement()) {
                 int id = en.nextRecordId();
@@ -18,6 +19,7 @@ public class Store {
             }
         } catch (Exception e) {
         } finally {
+            if (en != null) try { en.destroy(); } catch (Exception e) { }
             close(rs);
         }
         return def;
@@ -25,10 +27,11 @@ public class Store {
 
     public static synchronized void put(String key, String value) {
         RecordStore rs = null;
+        RecordEnumeration en = null;
         try {
             rs = RecordStore.openRecordStore(NAME, true);
             byte[] data = (key + "\t" + value).getBytes("UTF-8");
-            RecordEnumeration en = rs.enumerateRecords(null, null, false);
+            en = rs.enumerateRecords(null, null, false);
             String prefix = key + "\t";
             while (en.hasNextElement()) {
                 int id = en.nextRecordId();
@@ -41,8 +44,34 @@ public class Store {
             rs.addRecord(data, 0, data.length);
         } catch (Exception e) {
         } finally {
+            if (en != null) try { en.destroy(); } catch (Exception e) { }
             close(rs);
         }
+    }
+
+    public static synchronized java.util.Hashtable getAllWithPrefix(String prefix) {
+        java.util.Hashtable map = new java.util.Hashtable();
+        RecordStore rs = null;
+        RecordEnumeration en = null;
+        try {
+            rs = RecordStore.openRecordStore(NAME, true);
+            en = rs.enumerateRecords(null, null, false);
+            while (en.hasNextElement()) {
+                int id = en.nextRecordId();
+                String s = new String(rs.getRecord(id), "UTF-8");
+                if (s.startsWith(prefix)) {
+                    int tab = s.indexOf('\t');
+                    if (tab >= 0) {
+                        map.put(s.substring(0, tab), s.substring(tab + 1));
+                    }
+                }
+            }
+        } catch (Exception e) {
+        } finally {
+            if (en != null) try { en.destroy(); } catch (Exception e) { }
+            close(rs);
+        }
+        return map;
     }
 
     public static int getInt(String key, int def) {

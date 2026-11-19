@@ -89,7 +89,7 @@ public class ListScreen extends Canvas {
                 while (running) {
                     try {
                         Thread.sleep(60);
-                    } catch (InterruptedException e) {
+                    } catch (Exception e) {
                         break;
                     }
                     if (!running) break;
@@ -117,10 +117,7 @@ public class ListScreen extends Canvas {
 
     private synchronized void stopTicker() {
         running = false;
-        if (tickerThread != null) {
-            tickerThread.interrupt();
-            tickerThread = null;
-        }
+        tickerThread = null;
     }
 
     protected void paint(Graphics g) {

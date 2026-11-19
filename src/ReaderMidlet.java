@@ -158,6 +158,8 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
     }
 
     // ------------------------------------------------------------ browser
+    private int browserGen = 0;
+
     /** Shows only the books of the chosen library folder. */
     public void showLibrary() {
         if (library == null) { showFolderPicker(); return; }
@@ -176,14 +178,16 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
     private void showBrowser() {
         if (reader != null) reader.saveState();
         showWait("Đang đọc thư mục...");
+        final int bg = ++browserGen;
         new Thread(new Runnable() {
             public void run() {
                 try {
-                    listDir();
+                    listDir(bg);
                 } catch (Throwable e) {
+                    if (bg != browserGen) return;
                     curDir = null;
                     chooseMode = true;
-                    try { listDir(); } catch (Throwable e2) { }
+                    try { listDir(bg); } catch (Throwable e2) { }
                     showError("Không đọc được thư mục: " + e);
                 }
             }
@@ -201,7 +205,7 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
         return d > 0 ? name.substring(0, d) : name;
     }
 
-    private void listDir() throws IOException {
+    private void listDir(final int bg) throws IOException {
         Vector names = new Vector();
         if (curDir == null) {
             try {
@@ -245,11 +249,17 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
             // Sort library by most recently accessed first
             long[] times = new long[n];
             String lastUrl = Store.get("last", "");
+            java.util.Hashtable tMap = Store.getAllWithPrefix("t:");
+            java.util.Hashtable pMap = Store.getAllWithPrefix("p:");
             for (int i = 0; i < n; i++) {
                 String u = curDir + a[i];
-                long t = Store.getLong("t:" + u, 0);
+                long t = 0;
+                String tVal = (String) tMap.get("t:" + u);
+                if (tVal != null) {
+                    try { t = Long.parseLong(tVal); } catch (Exception e) { }
+                }
                 if (t == 0 && u.equals(lastUrl)) t = Long.MAX_VALUE;
-                else if (t == 0 && Store.get("p:" + u, "").length() > 0) t = 1;
+                else if (t == 0 && pMap.containsKey("p:" + u)) t = 1;
                 times[i] = t;
             }
             for (int i = 1; i < n; i++) {
@@ -276,6 +286,7 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
                 a[j + 1] = x;
             }
         }
+        if (bg != browserGen) return;
         entries = new Vector();
         String title;
         if (curDir == null) title = "Chọn ổ đĩa";
@@ -307,6 +318,7 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
         } else {
             ls.setSoftKeys("Thư mục", "Thoát");
         }
+        if (bg != browserGen) return;
         browser = ls;
         display.setCurrent(browser);
     }
