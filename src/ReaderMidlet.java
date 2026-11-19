@@ -118,7 +118,7 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
         menu.add("Mục lục", Ui.I_PAGE);
         menu.add("Đi tới %", Ui.I_PAGE);
         String[] fs = {"nhỏ", "vừa", "lớn"};
-        String[] th = {"sáng", "tối", "sepia"};
+        String[] th = {"sáng", "tối", "sepia", "opera dark"};
         menu.add("Cỡ chữ: " + fs[reader.getFontSize()], Ui.I_GEAR);
         menu.add("Giao diện: " + th[reader.getTheme()], Ui.I_GEAR);
         menu.add("Mục ưa thích", Ui.I_STAR);
@@ -157,7 +157,7 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
                 + "Trái/Phải (4/6), OK: lùi/tiến trang\n"
                 + "1 / 3: chương trước / sau\n"
                 + "Giữ *, bấm Lên/Xuống: đổi cỡ chữ\n"
-                + "#: đổi giao diện\n"
+                + "#: đổi giao diện (sáng/tối/sepia/opera dark)\n"
                 + "Trong danh sách sách:\n"
                 + "Trái/Phải (4/6): đổi Ưa thích / Tất cả\n"
                 + "*: Yêu thích / Bỏ yêu thích sách\n"
@@ -575,7 +575,7 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
                 case 2: showToc(); break;
                 case 3: showGoto(); break;
                 case 4: reader.cycleFont(); showMenu(); menu.setSelected(4); break;
-                case 5: reader.setTheme((reader.getTheme() + 1) % 3); showMenu(); menu.setSelected(5); break;
+                case 5: reader.setTheme((reader.getTheme() + 1) % 4); showMenu(); menu.setSelected(5); break;
                 case 6: showLibraryTab(TAB_FAV); break;
                 case 7: showLibraryTab(TAB_ALL); break;
                 case 8: showHelp(); break;

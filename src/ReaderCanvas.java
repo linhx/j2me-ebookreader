@@ -41,10 +41,13 @@ public class ReaderCanvas extends Canvas {
 
     private static final int[][] THEMES = {
         // background, text, dim, accent
-        {0xFFFFFF, 0x1A1A1A, 0x909090, 0x1F5A9E}, // light
-        {0x101010, 0xCFCFCF, 0x686868, 0xE8A838}, // dark
-        {0xF4ECD8, 0x3B2F1E, 0x9A8A6E, 0x8B3A1A}  // sepia
+        {0xFFFFFF, 0x1A1A1A, 0x909090, 0x1F5A9E}, // 0: sáng
+        {0x101010, 0xCFCFCF, 0x686868, 0xE8A838}, // 1: tối
+        {0xF4ECD8, 0x3B2F1E, 0x9A8A6E, 0x8B3A1A}, // 2: sepia
+        {0x181818, 0xE0E0E0, 0x888888, 0xE2262D}  // 3: opera dark
     };
+
+    public boolean isDark() { return theme == 1 || theme == 3; }
 
     public ReaderCanvas(ReaderMidlet m) {
         midlet = m;
@@ -380,11 +383,11 @@ public class ReaderCanvas extends Canvas {
         g.fillRect(0, 0, w, h);
         g.setColor(t[1]);
         int fy = h - footerH;
-        int c1 = theme == 1 ? 0x3C3C3C : theme == 2 ? 0xE9DDC1 : 0xF0F0F0;
-        int c2 = theme == 1 ? 0x1C1C1C : theme == 2 ? 0xC9B993 : 0xB4B4B4;
+        int c1 = isDark() ? 0x383838 : theme == 2 ? 0xE9DDC1 : 0xF0F0F0;
+        int c2 = isDark() ? 0x1C1C1C : theme == 2 ? 0xC9B993 : 0xB4B4B4;
         if (busy) {
-            Ui.softBar(g, fy, w, footerH, "Menu", "Mục lục", c1, c2, theme == 1 ? 0xE0E0E0 : 0x202020);
-            Ui.loadingBox(g, w, h, busyMsg, theme == 1);
+            Ui.softBar(g, fy, w, footerH, "Menu", "Mục lục", c1, c2, isDark() ? 0xE0E0E0 : 0x202020);
+            Ui.loadingBox(g, w, h, busyMsg, isDark());
             return;
         }
         if (availH < 1) metrics();
@@ -417,8 +420,8 @@ public class ReaderCanvas extends Canvas {
 
         double frac = (chapter + chProg) / total;
         if (frac > 1) frac = 1;
-        Ui.scrollbar(g, w - 3, 2, fy - 4, nLines, top, cnt, t[0] == 0x101010 ? 0x262626 : 0xEAEAEA, t[2]);
-        Ui.softBar(g, fy, w, footerH, "Menu", "Mục lục", c1, c2, theme == 1 ? 0xE0E0E0 : 0x202020);
+        Ui.scrollbar(g, w - 3, 2, fy - 4, nLines, top, cnt, isDark() ? 0x262626 : 0xEAEAEA, theme == 3 ? Ui.RED1 : t[2]);
+        Ui.softBar(g, fy, w, footerH, "Menu", "Mục lục", c1, c2, isDark() ? 0xE0E0E0 : 0x202020);
         g.setColor(0x808080);
         g.drawLine(0, fy, w, fy);
         g.setColor(t[3]);
@@ -438,7 +441,7 @@ public class ReaderCanvas extends Canvas {
             g.setColor(0xFFFFFF);
             g.drawString(noteHint, w / 2, fty, Graphics.TOP | Graphics.HCENTER);
         } else {
-            g.setColor(theme == 1 ? 0xE0E0E0 : 0x202020);
+            g.setColor(isDark() ? 0xE0E0E0 : 0x202020);
             g.drawString((chapter + 1) + "/" + total + "  " + (int) (frac * 100) + "%", w / 2, fty,
                     Graphics.TOP | Graphics.HCENTER);
         }
@@ -1087,8 +1090,10 @@ public class ReaderCanvas extends Canvas {
     }
 
     public void setTheme(int t) {
-        theme = t;
-        Store.putInt("theme", t);
+        theme = Math.max(0, Math.min(THEMES.length - 1, t));
+        Store.putInt("theme", theme);
+        String[] nm = {"sáng", "tối", "sepia", "opera dark"};
+        showToast("Giao diện: " + nm[theme]);
         repaint();
     }
 
