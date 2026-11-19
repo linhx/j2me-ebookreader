@@ -74,7 +74,7 @@ public class CaptureShowcase {
         lib.add("Vang Bóng Một Thời", Ui.I_BOOK);
         lib.add("Lão Hạc - Tuyển Tập", Ui.I_BOOK);
         lib.setSelected(1);
-        lib.setSoftKeys("Thư mục", "Đọc tiếp");
+        lib.setSoftKeys("Thư mục", "Thoát");
         dump(lib, new File(outDir, "library.png"));
 
         // 2. Reader screens (Light, Sepia, Dark)

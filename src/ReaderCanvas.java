@@ -539,7 +539,6 @@ public class ReaderCanvas extends Canvas {
             return;
         }
         if (code == KEY_POUND) { setTheme((theme + 1) % THEMES.length); return; }
-        if (code == KEY_NUM0) { midlet.showMenu(); return; }
         switch (a) {
             case UP: scroll(repeat ? -5 : -3); break;
             case DOWN: scroll(repeat ? 5 : 3); break;

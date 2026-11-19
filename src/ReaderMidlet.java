@@ -149,7 +149,7 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
                 + "1 / 3: chương trước / sau\n"
                 + "Giữ *, bấm Lên/Xuống: tăng/giảm cỡ chữ (bấm * nhanh: đổi cỡ)\n"
                 + "#: đổi giao diện\n"
-                + "Phím mềm trái / 0: Menu\n"
+                + "Phím mềm trái: Menu\n"
                 + "Phím mềm phải: Mục lục\n");
         f.addCommand(cBack);
         f.setCommandListener(this);
@@ -272,7 +272,7 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
             ls.setSoftKeys(curDir != null ? "Chọn" : "", library != null ? "Hủy" : "Thoát");
             if (hasUpItem && n > 0) ls.setSelected(1);
         } else {
-            ls.setSoftKeys("Thư mục", reader.getBook() != null ? "Đọc tiếp" : "Thoát");
+            ls.setSoftKeys("Thư mục", "Thoát");
         }
         browser = ls;
         display.setCurrent(browser);
@@ -320,8 +320,6 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
                 }
             } else if (leftKey) {
                 showFolderPicker();
-            } else if (reader.getBook() != null) {
-                display.setCurrent(reader);
             } else {
                 quit();
             }

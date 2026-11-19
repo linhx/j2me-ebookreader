@@ -48,5 +48,5 @@ java -Dfile.encoding=ISO_8859_1 -jar /mnt/data/apps/freej2me-plus/build/freej2me
 | Giữ `*` + `Lên` / `Xuống` | Tăng / giảm cỡ chữ (có thông báo nhanh trên màn hình) |
 | Bấm `*` nhanh | Đổi vòng cỡ chữ (nhỏ → vừa → lớn) |
 | `#` | Đổi giao diện (Sáng → Tối → Sepia) |
-| Phím mềm trái hoặc `0` | Mở Menu (Mục lục, Đi tới %, Cỡ chữ, Giao diện, Danh sách sách…) |
+| Phím mềm trái | Mở Menu (Mục lục, Đi tới %, Cỡ chữ, Giao diện, Danh sách sách…) |
 | Phím mềm phải | Mở Mục lục |
