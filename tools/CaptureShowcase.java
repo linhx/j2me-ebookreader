@@ -59,22 +59,27 @@ public class CaptureShowcase {
         Mobile.lcdWidth = 240;
         Mobile.lcdHeight = 320;
         Mobile.isAAEnabled = true;
-        Mobile.setPlatform(new MobilePlatform(240, 320), new Runnable() {
+        MobilePlatform mp = new MobilePlatform(240, 320);
+        java.util.HashMap map = new java.util.HashMap();
+        map.put("MIDlet-Vendor", "linh");
+        map.put("MIDlet-Name", "BookReader");
+        mp.loader = new org.recompile.mobile.MIDletLoader(new File("dist/BookReader.jar").toURI().toURL(), map);
+        Mobile.setPlatform(mp, new Runnable() {
             public void run() {}
         });
         Mobile.setDisplay(new Display());
 
         // 1. Library screen
-        ListScreen lib = new ListScreen(null, "Thư viện");
-        lib.add("Dế Mèn Phiêu Lưu Ký", Ui.I_BOOK);
-        lib.add("Truyện Kiều - Nguyễn Du", Ui.I_BOOK);
-        lib.add("Số Đỏ - Vũ Trọng Phụng", Ui.I_BOOK);
-        lib.add("Tắt Đèn - Ngô Tất Tố", Ui.I_BOOK);
-        lib.add("Chí Phèo - Nam Cao", Ui.I_BOOK);
-        lib.add("Vang Bóng Một Thời", Ui.I_BOOK);
-        lib.add("Lão Hạc - Tuyển Tập", Ui.I_BOOK);
+        Store.putInt("ui_theme", 1);
+        ListScreen lib = new ListScreen(null, "BookReader");
+        lib.setTabs(new String[]{"Ưa thích", "Tất cả sách"}, 0);
+        lib.add("Dế Mèn Phiêu Lưu Ký", Ui.I_STAR);
+        lib.add("Truyện Kiều - Nguyễn Du", Ui.I_STAR);
+        lib.add("Số Đỏ - Vũ Trọng Phụng", Ui.I_STAR);
+        lib.add("Tắt Đèn - Ngô Tất Tố", Ui.I_STAR);
+        lib.add("Chí Phèo - Nam Cao", Ui.I_STAR);
         lib.setSelected(1);
-        lib.setSoftKeys("Thư mục", "Thoát");
+        lib.setSoftKeys("Menu", "Thoát");
         dump(lib, new File(outDir, "library.png"));
 
         // 2. Reader screens (Light, Sepia, Dark)
@@ -91,14 +96,17 @@ public class CaptureShowcase {
         // 3. Menu screen
         ListScreen menu = new ListScreen(null, "Menu");
         menu.add("Tiếp tục đọc", Ui.I_BOOK);
+        menu.add("☆ Thêm vào ưa thích", Ui.I_STAR);
         menu.add("Mục lục", Ui.I_PAGE);
         menu.add("Đi tới %", Ui.I_PAGE);
         menu.add("Cỡ chữ: vừa", Ui.I_GEAR);
-        menu.add("Giao diện: sepia", Ui.I_GEAR);
-        menu.add("Danh sách sách", Ui.I_FOLDER);
+        menu.add("Giao diện: tối", Ui.I_GEAR);
+        menu.add("Màu đọc: sáng", Ui.I_GEAR);
+        menu.add("Mục ưa thích", Ui.I_STAR);
+        menu.add("Tất cả sách", Ui.I_BOOK);
         menu.add("Hướng dẫn phím", Ui.I_GEAR);
         menu.add("Thoát", Ui.I_GEAR);
-        menu.setSelected(0);
+        menu.setSelected(5);
         menu.setSoftKeys("Chọn", "Quay lại");
         dump(menu, new File(outDir, "menu.png"));
 
