@@ -23,7 +23,7 @@ public class ReaderCanvas extends Canvas {
     private int nLines = 0;
     private int top = 0;
 
-    private Font font, small, fTitle, fSub, fItalic;
+    private Font font, small, fTitle, fSub, fItalic, fCaption;
     private int fontSize, theme;
     private int lineH, linesPerPage, margin = 7, footerH, textW, availH;
     private volatile boolean busy = true;
@@ -67,6 +67,8 @@ public class ReaderCanvas extends Canvas {
                 fontSize == 0 ? Font.SIZE_MEDIUM : Font.SIZE_LARGE);
         fSub = Font.getFont(Font.FACE_PROPORTIONAL, Font.STYLE_BOLD, sz);
         fItalic = Font.getFont(Font.FACE_PROPORTIONAL, Font.STYLE_ITALIC, sz);
+        int capSize = fontSize == 2 ? Font.SIZE_MEDIUM : Font.SIZE_SMALL;
+        fCaption = Font.getFont(Font.FACE_PROPORTIONAL, Font.STYLE_ITALIC, capSize);
         footerH = small.getHeight() + 8;
     }
 
@@ -272,7 +274,7 @@ public class ReaderCanvas extends Canvas {
             if (e < 0) e = n;
             int a = p, b = e;
             int knd = 0;
-            if (a < b && text.charAt(a) < 5 && text.charAt(a) > 0) {
+            if (a < b && text.charAt(a) <= 6 && text.charAt(a) > 0) {
                 knd = text.charAt(a);
                 a++;
             }
@@ -304,13 +306,14 @@ public class ReaderCanvas extends Canvas {
         if (knd == 1) return fTitle;
         if (knd == 2) return fSub;
         if (knd == 5) return fItalic;
+        if (knd == 6) return fCaption;
         return font;
     }
 
     private void wrap(int ps, int pe, int knd) {
         Font f = fontFor(knd);
         int indent = knd == 0 ? font.charWidth(' ') * 2 : 0;
-        int fh = f.getHeight() + 2;
+        int fh = f.getHeight() + (knd == 6 ? 1 : 2);
         int pos = ps;
         boolean first = true;
         while (pos < pe) {
@@ -330,14 +333,18 @@ public class ReaderCanvas extends Canvas {
             if (i >= pe) {
                 end = pe; next = pe;
             } else if (lastSpace > pos) {
-                end = lastSpace; next = lastSpace + 1; j = knd == 0;
+                end = lastSpace; next = lastSpace + 1; j = (knd == 0);
             } else {
                 if (i == pos) i++;
                 end = i; next = i;
             }
             int g = 0, height = fh;
-            if (first) g = knd == 1 ? lineH : knd == 2 ? lineH / 2 : lineH / 3;
-            if (next >= pe) height += knd == 1 ? 4 : knd == 2 ? 1 : 0; // space after headings
+            if (first) {
+                g = (knd == 1) ? lineH : (knd == 2) ? lineH / 2 : (knd == 6) ? lineH / 4 : lineH / 3;
+            }
+            if (next >= pe) {
+                height += (knd == 1) ? 4 : (knd == 2) ? 1 : (knd == 6) ? lineH / 2 : 0;
+            }
             addLine(pos, end, knd, first && knd == 0, j, height, g);
             first = false;
             pos = next;
@@ -452,6 +459,18 @@ public class ReaderCanvas extends Canvas {
             g.fillRect(ix + 2, iy - 2, 3, 2);
             g.drawArc(ix + 3, iy + 2, 4, 4, 0, 360);
             g.drawString(label, ix + 16, y, Graphics.TOP | Graphics.LEFT);
+            return;
+        }
+        if (knd == 6) {
+            // Image caption: smaller, italic, secondary dim color, centered
+            g.setFont(fCaption);
+            g.setColor(t[2]);
+            int clen = le[i] - ls[i];
+            if (clen <= 0) return;
+            int sw = fCaption.substringWidth(text, ls[i], clen);
+            int cx = margin + (textW - sw) / 2;
+            if (cx < margin) cx = margin;
+            g.drawSubstring(text, ls[i], clen, cx, y, Graphics.TOP | Graphics.LEFT);
             return;
         }
         int len = le[i] - ls[i];

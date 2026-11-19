@@ -18,7 +18,8 @@ public class Html {
 
     private static final String[] BLOCK = {
         "p", "div", "br", "h1", "h2", "h3", "h4", "h5", "h6", "li", "tr", "blockquote",
-        "section", "article", "hr", "table", "ul", "ol", "dt", "dd", "pre", "title", "header", "footer"
+        "section", "article", "hr", "table", "ul", "ol", "dt", "dd", "pre", "title", "header", "footer",
+        "figcaption", "figure"
     };
 
     private InputStream in;
@@ -211,8 +212,10 @@ public class Html {
                     t = nextChar();
                 }
                 String name = nlen > 0 ? new String(nameBuf, 0, nlen) : "";
-                String imgSrc = null, imgAlt = null, linkHref = null, tagId = null, epubType = null;
-                boolean shouldParseAttrs = !closing && (name.equals("img") || name.equals("image") || name.equals("a") || name.equals("aside") || name.equals("section"));
+                String imgSrc = null, imgAlt = null, linkHref = null, tagId = null, epubType = null, tagClass = null;
+                boolean shouldParseAttrs = !closing && (name.equals("img") || name.equals("image") || name.equals("a")
+                        || name.equals("aside") || name.equals("section") || name.equals("p")
+                        || name.equals("div") || name.equals("figcaption") || name.equals("figure"));
                 if (shouldParseAttrs) {
                     StringBuffer an = new StringBuffer();
                     StringBuffer av = new StringBuffer();
@@ -253,7 +256,10 @@ public class Html {
                                 if (linkHref == null) linkHref = aVal;
                             } else if (aName.equals("id")) {
                                 if (tagId == null) tagId = aVal;
-                            } else if (aName.equals("epub:type") || aName.equals("type") || aName.equals("class")) {
+                            } else if (aName.equals("class")) {
+                                if (tagClass == null) tagClass = aVal.toLowerCase();
+                                if (epubType == null) epubType = aVal.toLowerCase();
+                            } else if (aName.equals("epub:type") || aName.equals("type")) {
                                 if (epubType == null) epubType = aVal.toLowerCase();
                             }
                         }
@@ -376,6 +382,7 @@ public class Html {
                         else if (name.length() == 2 && name.charAt(0) == 'h' && name.charAt(1) >= '3' && name.charAt(1) <= '6') { emit('\u0002'); marked = true; }
                         else if (name.equals("hr")) { emit('\u0003'); emit('\n'); }
                         else if (name.equals("li")) { emit('\u2022'); emit(' '); lineStart = false; }
+                        else if (isCaption(name, tagClass)) { emit('\u0006'); marked = true; }
                     }
                 }
                 continue;
@@ -539,6 +546,16 @@ public class Html {
             if (tid != null && !bodies.containsKey(tid)) return false;
         }
         return true;
+    }
+
+    private static boolean isCaption(String name, String tagClass) {
+        if (name.equals("figcaption")) return true;
+        if (tagClass == null) return false;
+        return tagClass.indexOf("hinh") >= 0
+            || tagClass.indexOf("caption") >= 0
+            || tagClass.indexOf("figcap") >= 0
+            || tagClass.indexOf("chuthich") >= 0
+            || tagClass.indexOf("chu-thich") >= 0;
     }
 
     private static boolean isNameChar(char c) {
