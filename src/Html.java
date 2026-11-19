@@ -334,15 +334,19 @@ public class Html {
                         String lbl;
                         if (noteLen == 0) {
                             lbl = "" + (noteSeq + 1);
-                            emit('[');
-                            for (int k = 0; k < lbl.length(); k++) emit(lbl.charAt(k));
-                            emit(']');
                         } else {
                             lbl = new String(out, noteRefStart, noteLen).trim();
-                            if (lbl.startsWith("[") && lbl.endsWith("]")) lbl = lbl.substring(1, lbl.length() - 1);
+                            if (lbl.startsWith("[") && lbl.endsWith("]")) {
+                                lbl = lbl.substring(1, lbl.length() - 1).trim();
+                            }
                             if (lbl.length() == 0) lbl = "" + (noteSeq + 1);
                         }
-                        noteRefs.addElement(new Object[] {new Integer(noteRefStart), currentNoteTarget, lbl});
+                        outLen = noteRefStart;
+                        emit('[');
+                        for (int k = 0; k < lbl.length(); k++) emit(lbl.charAt(k));
+                        emit(']');
+                        int anchorLen = outLen - noteRefStart;
+                        noteRefs.addElement(new Object[] {new Integer(noteRefStart), new Integer(anchorLen), currentNoteTarget, lbl});
                         noteSeq++;
                     }
                 }
@@ -442,11 +446,12 @@ public class Html {
             for (int i = 0; i < noteRefs.size(); i++) {
                 Object[] r = (Object[]) noteRefs.elementAt(i);
                 int off = ((Integer) r[0]).intValue();
-                String tid = (String) r[1];
-                String lbl = (String) r[2];
+                int len = ((Integer) r[1]).intValue();
+                String tid = (String) r[2];
+                String lbl = (String) r[3];
                 String body = (String) noteBodies.get(tid);
                 if (body != null && body.length() > 0) {
-                    outNotes.addElement(new Book.Note(off, lbl, body));
+                    outNotes.addElement(new Book.Note(off, len, lbl, body));
                 }
             }
         }
@@ -530,7 +535,7 @@ public class Html {
         if (refs == null || refs.size() == 0) return true;
         for (int i = 0; i < refs.size(); i++) {
             Object[] r = (Object[]) refs.elementAt(i);
-            String tid = (String) r[1];
+            String tid = (String) r[2];
             if (tid != null && !bodies.containsKey(tid)) return false;
         }
         return true;

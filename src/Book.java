@@ -29,13 +29,19 @@ public abstract class Book {
 
     public static class Note {
         public int charOffset;
+        public int length;
         public String label;
         public String body;
 
-        public Note(int charOffset, String label, String body) {
+        public Note(int charOffset, int length, String label, String body) {
             this.charOffset = charOffset;
+            this.length = length;
             this.label = label;
             this.body = body;
+        }
+
+        public Note(int charOffset, String label, String body) {
+            this(charOffset, 3, label, body);
         }
     }
 

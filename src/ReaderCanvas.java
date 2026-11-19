@@ -414,13 +414,6 @@ public class ReaderCanvas extends Canvas {
     private void drawLine(Graphics g, int i, int y, int w, int[] t) {
         int knd = kind(i);
         int lhi = lh(i);
-        if (selectedNote >= 0 && notes != null && selectedNote < notes.length) {
-            int noff = notes[selectedNote].charOffset;
-            if (noff >= ls[i] && noff < le[i]) {
-                g.setColor(t[3]);
-                g.drawRect(margin - 2, y - 1, textW + 4, lhi + 1);
-            }
-        }
         if (knd == 3) {
             g.setColor(t[2]);
             int ly = y + lhi / 2;
@@ -465,8 +458,13 @@ public class ReaderCanvas extends Canvas {
         Font f = fontFor(knd);
         g.setFont(f);
         if (knd == 0) {
-            g.setColor(t[1]);
             int x = margin + (ind(i) ? font.charWidth(' ') * 2 : 0);
+            int firstNote = findFirstNoteOnLine(ls[i], le[i]);
+            if (firstNote >= 0) {
+                drawLineWithNotes(g, i, x, y, f, t, firstNote);
+                return;
+            }
+            g.setColor(t[1]);
             if (just(i) && drawJustified(g, i, x, y, f)) return;
             g.drawSubstring(text, ls[i], len, x, y, Graphics.TOP | Graphics.LEFT);
         } else if (knd == 1) {
@@ -479,6 +477,66 @@ public class ReaderCanvas extends Canvas {
         } else {
             g.setColor(t[3]);
             g.drawSubstring(text, ls[i], len, margin, y, Graphics.TOP | Graphics.LEFT);
+        }
+    }
+
+    private int findFirstNoteOnLine(int s, int e) {
+        if (notes == null || notes.length == 0) return -1;
+        for (int k = 0; k < notes.length; k++) {
+            int noff = notes[k].charOffset;
+            if (noff >= s && noff < e) return k;
+        }
+        return -1;
+    }
+
+    private void drawLineWithNotes(Graphics g, int lineIdx, int x, int y, Font f, int[] t, int firstNote) {
+        int s = ls[lineIdx], e = le[lineIdx];
+        int cur = s;
+        Font fNote = small;
+
+        for (int k = firstNote; k < notes.length; k++) {
+            Book.Note n = notes[k];
+            if (n.charOffset >= e) break;
+            if (n.charOffset < cur) continue;
+
+            if (n.charOffset > cur) {
+                g.setFont(f);
+                g.setColor(t[1]);
+                g.drawSubstring(text, cur, n.charOffset - cur, x, y, Graphics.TOP | Graphics.LEFT);
+                x += f.substringWidth(text, cur, n.charOffset - cur);
+            }
+
+            int nlen = n.length > 0 ? n.length : 3;
+            if (n.charOffset + nlen > e) nlen = e - n.charOffset;
+            String nstr = text.substring(n.charOffset, n.charOffset + nlen);
+            g.setFont(fNote);
+            int nw = fNote.stringWidth(nstr);
+            int ny = y - 2;
+
+            boolean isFocused = (selectedNote == k);
+            if (isFocused) {
+                int padX = 2;
+                int padY = 1;
+                int bx = x - padX;
+                int by = ny - padY;
+                int bw = nw + padX * 2;
+                int bh = fNote.getHeight() + padY * 2;
+                g.setColor(t[3]);
+                g.fillRoundRect(bx, by, bw, bh, 4, 4);
+                g.setColor(0xFFFFFF);
+                g.drawString(nstr, x, ny, Graphics.TOP | Graphics.LEFT);
+            } else {
+                g.setColor(t[3]);
+                g.drawString(nstr, x, ny, Graphics.TOP | Graphics.LEFT);
+            }
+            x += nw;
+            cur = n.charOffset + nlen;
+        }
+
+        if (cur < e) {
+            g.setFont(f);
+            g.setColor(t[1]);
+            g.drawSubstring(text, cur, e - cur, x, y, Graphics.TOP | Graphics.LEFT);
         }
     }
 
@@ -692,7 +750,7 @@ public class ReaderCanvas extends Canvas {
         Book.Note n = notes[selectedNote];
         int targetLine = lineAt(n.charOffset);
         if (targetLine < top || targetLine >= top + fits(top)) {
-            top = Math.max(0, targetLine);
+            top = Math.max(0, targetLine - 2);
         }
         showToast("Chú thích [" + n.label + "/" + notes.length + "] - Bấm OK để đọc");
         repaint();
