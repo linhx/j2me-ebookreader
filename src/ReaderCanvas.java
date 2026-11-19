@@ -55,6 +55,7 @@ public class ReaderCanvas extends Canvas {
     }
 
     public Book getBook() { return book; }
+    public String getUrl() { return url; }
     public int getFontSize() { return fontSize; }
     public int getTheme() { return theme; }
 

@@ -49,6 +49,46 @@ public class Store {
         }
     }
 
+    public static synchronized void remove(String key) {
+        RecordStore rs = null;
+        RecordEnumeration en = null;
+        try {
+            rs = RecordStore.openRecordStore(NAME, true);
+            en = rs.enumerateRecords(null, null, false);
+            String prefix = key + "\t";
+            while (en.hasNextElement()) {
+                int id = en.nextRecordId();
+                String s = new String(rs.getRecord(id), "UTF-8");
+                if (s.startsWith(prefix)) {
+                    rs.deleteRecord(id);
+                    return;
+                }
+            }
+        } catch (Exception e) {
+        } finally {
+            if (en != null) try { en.destroy(); } catch (Exception e) { }
+            close(rs);
+        }
+    }
+
+    public static boolean isFavorite(String url) {
+        if (url == null) return false;
+        return "1".equals(get("fav:" + url, "0"));
+    }
+
+    public static void setFavorite(String url, boolean fav) {
+        if (url == null) return;
+        if (fav) {
+            put("fav:" + url, "1");
+        } else {
+            remove("fav:" + url);
+        }
+    }
+
+    public static int countFavorites() {
+        return getAllWithPrefix("fav:").size();
+    }
+
     public static synchronized java.util.Hashtable getAllWithPrefix(String prefix) {
         java.util.Hashtable map = new java.util.Hashtable();
         RecordStore rs = null;

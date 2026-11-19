@@ -121,8 +121,47 @@ public class Ui {
         g.drawRect(bx, by, bw - 1, bh - 1);
     }
 
+    /** Tab bar: two or more tabs with red gradient and active indicator. */
+    public static void tabBar(Graphics g, int w, int h, String[] tabs, int active) {
+        vgrad(g, 0, 0, w, h, 0x851014, 0x5C0B0E);
+        g.setColor(0x50080B);
+        g.drawLine(0, h - 1, w, h - 1);
+        int n = tabs.length;
+        int tw = w / n;
+        Font fNorm = Font.getFont(Font.FACE_PROPORTIONAL, Font.STYLE_PLAIN, Font.SIZE_SMALL);
+        Font fBold = Font.getFont(Font.FACE_PROPORTIONAL, Font.STYLE_BOLD, Font.SIZE_SMALL);
+        for (int i = 0; i < n; i++) {
+            int tx = i * tw;
+            int curW = (i == n - 1) ? (w - tx) : tw;
+            boolean act = (i == active);
+            if (act) {
+                vgrad(g, tx, 0, curW, h - 1, RED1, RED2);
+                g.setColor(0xFF7A7F);
+                g.drawLine(tx, 0, tx + curW - 1, 0);
+                g.setColor(0xFFFFFF);
+                g.fillRect(tx + 6, h - 2, curW - 12, 2);
+            } else {
+                g.setColor(0x6E0C10);
+                g.drawLine(tx, 2, tx, h - 4);
+            }
+            Font f = act ? fBold : fNorm;
+            g.setFont(f);
+            int ty = (h - f.getHeight()) / 2;
+            int cx = tx + curW / 2;
+            if (act) {
+                g.setColor(0x5A0A0D);
+                g.drawString(tabs[i], cx + 1, ty + 1, Graphics.TOP | Graphics.HCENTER);
+                g.setColor(0xFFFFFF);
+                g.drawString(tabs[i], cx, ty, Graphics.TOP | Graphics.HCENTER);
+            } else {
+                g.setColor(0xE8B0B2);
+                g.drawString(tabs[i], cx, ty, Graphics.TOP | Graphics.HCENTER);
+            }
+        }
+    }
+
     // ---- small 14x12 icons, drawn at (x, y)
-    public static final int I_NONE = 0, I_FOLDER = 1, I_BOOK = 2, I_UP = 3, I_DRIVE = 4, I_PAGE = 5, I_GEAR = 6;
+    public static final int I_NONE = 0, I_FOLDER = 1, I_BOOK = 2, I_UP = 3, I_DRIVE = 4, I_PAGE = 5, I_GEAR = 6, I_STAR = 7;
 
     public static void icon(Graphics g, int type, int x, int y, boolean selected) {
         switch (type) {
@@ -134,6 +173,15 @@ public class Ui {
                 g.fillRect(x + 1, y + 6, 12, 5);
                 g.setColor(0x9A7410);
                 g.drawRect(x, y + 4, 13, 7);
+                break;
+            case I_STAR:
+                g.setColor(selected ? 0xFFFFFF : 0xF5A623);
+                g.fillTriangle(x + 6, y, x + 4, y + 5, x + 8, y + 5);
+                g.fillTriangle(x, y + 4, x + 5, y + 4, x + 5, y + 7);
+                g.fillTriangle(x + 12, y + 4, x + 7, y + 4, x + 7, y + 7);
+                g.fillTriangle(x + 2, y + 11, x + 4, y + 6, x + 7, y + 8);
+                g.fillTriangle(x + 10, y + 11, x + 8, y + 6, x + 5, y + 8);
+                g.fillRect(x + 4, y + 4, 5, 4);
                 break;
             case I_BOOK:
                 g.setColor(selected ? 0xFFFFFF : 0x1F5A9E);

@@ -8,12 +8,16 @@ public class ListScreen extends Canvas {
     public interface Listener {
         void onSelect(ListScreen s, int index);
         void onSoft(ListScreen s, boolean left);
+        void onTab(ListScreen s, int newTab);
+        void onKey(ListScreen s, int keyCode, int index);
     }
 
     private final Listener listener;
     private String title = "";
     private String left, right;
     private String loadingMsg;
+    private String[] tabs = null;
+    private int activeTab = 0;
     private final Vector labels = new Vector();
     private int[] icons = new int[16];
     private int sel = 0, first = 0;
@@ -33,6 +37,14 @@ public class ListScreen extends Canvas {
     }
 
     public void setSoftKeys(String l, String r) { left = l; right = r; }
+
+    public void setTabs(String[] tabs, int active) {
+        this.tabs = tabs;
+        this.activeTab = active;
+    }
+
+    public int getActiveTab() { return activeTab; }
+    public String[] getTabs() { return tabs; }
 
     public void setLoading(String msg) {
         loadingMsg = msg;
@@ -163,14 +175,22 @@ public class ListScreen extends Canvas {
             y += rh;
         }
         Ui.scrollbar(g, w - 4, th, h - th - bh, n, first, v, 0xE6E6E6, 0xB0B0B0);
-        Ui.titleBar(g, w, th, title, n > 0 ? (sel + 1) + "/" + n : null);
+        if (tabs != null && tabs.length > 1) {
+            Ui.tabBar(g, w, th, tabs, activeTab);
+        } else {
+            Ui.titleBar(g, w, th, title, n > 0 ? (sel + 1) + "/" + n : null);
+        }
         Ui.softBar(g, h - bh, w, bh, left, right, 0xF0F0F0, 0xB4B4B4, 0x202020);
         if (n > 0 && sel >= 0 && sel < n && !showPreview) {
-            String selText = (String) labels.elementAt(sel);
-            if (bold.stringWidth(selText) > w - 36) {
-                g.setFont(font);
-                g.setColor(0x707070);
-                g.drawString("0: Xem tên", w / 2, h - bh + (bh - font.getHeight()) / 2 + 1, Graphics.TOP | Graphics.HCENTER);
+            g.setFont(font);
+            g.setColor(0x707070);
+            if (tabs != null && tabs.length > 1) {
+                g.drawString("*: Thích | 0: Tên", w / 2, h - bh + (bh - font.getHeight()) / 2 + 1, Graphics.TOP | Graphics.HCENTER);
+            } else {
+                String selText = (String) labels.elementAt(sel);
+                if (bold.stringWidth(selText) > w - 36) {
+                    g.drawString("0: Xem tên", w / 2, h - bh + (bh - font.getHeight()) / 2 + 1, Graphics.TOP | Graphics.HCENTER);
+                }
             }
         }
         if (loadingMsg != null) {
@@ -233,7 +253,7 @@ public class ListScreen extends Canvas {
         g.drawLine(dx + 2, fy, dx + dw - 2, fy);
         g.setFont(font);
         g.setColor(0x707070);
-        g.drawString("OK: Mở sách | Phím khác: Đóng", dx + dw / 2, fy + 4, Graphics.TOP | Graphics.HCENTER);
+        g.drawString("OK: Mở | *: Thích | Khác: Đóng", dx + dw / 2, fy + 4, Graphics.TOP | Graphics.HCENTER);
     }
 
     private Vector wrapText(String str, int maxW, Font f) {
@@ -292,14 +312,25 @@ public class ListScreen extends Canvas {
                 listener.onSelect(this, sel);
                 return;
             }
+            if (code == KEY_STAR) {
+                showPreview = false;
+                listener.onKey(this, KEY_STAR, sel);
+                return;
+            }
             showPreview = false;
             repaint();
             return;
         }
-        if (code == KEY_NUM0 || code == KEY_STAR || code == KEY_POUND) {
+        if (code == KEY_NUM0 || code == KEY_POUND) {
             if (labels.size() > 0 && sel >= 0 && sel < labels.size()) {
                 showPreview = true;
                 repaint();
+                return;
+            }
+        }
+        if (code == KEY_STAR) {
+            if (labels.size() > 0 && sel >= 0 && sel < labels.size()) {
+                listener.onKey(this, KEY_STAR, sel);
                 return;
             }
         }
@@ -312,15 +343,28 @@ public class ListScreen extends Canvas {
         else if (code == KEY_NUM6) a = RIGHT;
         else if (code == KEY_NUM5) a = FIRE;
         int n = labels.size();
-        if (n == 0) return;
-        if (a == UP) {
+        if (a == LEFT) {
+            if (tabs != null && tabs.length > 1) {
+                int nextTab = activeTab > 0 ? activeTab - 1 : tabs.length - 1;
+                listener.onTab(this, nextTab);
+                return;
+            }
+            if (n == 0) return;
+            sel = Math.max(0, sel - visibleRows());
+        } else if (a == RIGHT) {
+            if (tabs != null && tabs.length > 1) {
+                int nextTab = activeTab < tabs.length - 1 ? activeTab + 1 : 0;
+                listener.onTab(this, nextTab);
+                return;
+            }
+            if (n == 0) return;
+            sel = Math.min(n - 1, sel + visibleRows());
+        } else if (n == 0) {
+            return;
+        } else if (a == UP) {
             sel = sel == 0 ? n - 1 : sel - 1;
         } else if (a == DOWN) {
             sel = sel == n - 1 ? 0 : sel + 1;
-        } else if (a == LEFT) {
-            sel = Math.max(0, sel - visibleRows());
-        } else if (a == RIGHT) {
-            sel = Math.min(n - 1, sel + visibleRows());
         } else if (a == FIRE) {
             listener.onSelect(this, sel);
             return;
