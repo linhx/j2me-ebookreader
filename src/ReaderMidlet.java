@@ -121,11 +121,15 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
         menu.add("Mục lục", Ui.I_PAGE);
         menu.add("Đi tới %", Ui.I_PAGE);
         String[] fs = {"nhỏ", "vừa", "lớn"};
-        String[] th = {"sáng", "tối", "sepia"};
         menu.add("Cỡ chữ: " + fs[reader.getFontSize()], Ui.I_GEAR);
+        String[] uiTh = {"sáng", "tối"};
+        int curUi = Store.getInt("ui_theme", 1);
+        if (curUi < 0 || curUi >= uiTh.length) curUi = 1;
+        menu.add("Giao diện: " + uiTh[curUi], Ui.I_GEAR);
+        String[] readTh = {"sáng", "tối", "sepia"};
         int rTh = reader.getTheme();
-        if (rTh < 0 || rTh >= th.length) rTh = 0;
-        menu.add("Giao diện: " + th[rTh], Ui.I_GEAR);
+        if (rTh < 0 || rTh >= readTh.length) rTh = 0;
+        menu.add("Màu đọc: " + readTh[rTh], Ui.I_GEAR);
         menu.add("Mục ưa thích", Ui.I_STAR);
         menu.add("Tất cả sách", Ui.I_BOOK);
         menu.add("Hướng dẫn phím", Ui.I_GEAR);
@@ -162,7 +166,7 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
                 + "Trái/Phải (4/6), OK: lùi/tiến trang\n"
                 + "1 / 3: chương trước / sau\n"
                 + "Giữ *, bấm Lên/Xuống: đổi cỡ chữ\n"
-                + "#: đổi giao diện (sáng / tối / sepia)\n"
+                + "#: đổi màu đọc (sáng / tối / sepia)\n"
                 + "Trong danh sách sách:\n"
                 + "Trái/Phải (4/6): đổi Ưa thích / Tất cả\n"
                 + "*: Yêu thích / Bỏ yêu thích sách\n"
@@ -205,11 +209,16 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
         libMenu.add("Đổi thư mục sách", Ui.I_FOLDER);
         libMenuActions.addElement("folder");
 
-        String[] th = {"sáng", "tối", "sepia"};
+        String[] uiTh = {"sáng", "tối"};
+        int curUi = Store.getInt("ui_theme", 1);
+        if (curUi < 0 || curUi >= uiTh.length) curUi = 1;
+        libMenu.add("Giao diện: " + uiTh[curUi], Ui.I_GEAR);
+        libMenuActions.addElement("ui_theme");
+
+        String[] readTh = {"sáng", "tối", "sepia"};
         int curTheme = Store.getInt("theme", 0);
-        if (curTheme >= 3) curTheme = 1;
-        if (curTheme < 0 || curTheme >= th.length) curTheme = 0;
-        libMenu.add("Giao diện: " + th[curTheme], Ui.I_GEAR);
+        if (curTheme < 0 || curTheme >= readTh.length) curTheme = 0;
+        libMenu.add("Màu đọc: " + readTh[curTheme], Ui.I_GEAR);
         libMenuActions.addElement("theme");
 
         String[] fs = {"nhỏ", "vừa", "lớn"};
@@ -241,9 +250,15 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
             if (lastUrl != null && lastUrl.length() > 0) openFile(lastUrl);
         } else if ("folder".equals(action)) {
             showFolderPicker();
+        } else if ("ui_theme".equals(action)) {
+            int curUi = Store.getInt("ui_theme", 1);
+            int nextUi = (curUi + 1) % 2;
+            Store.putInt("ui_theme", nextUi);
+            if (reader != null) reader.repaint();
+            showLibraryMenu();
+            libMenu.setSelected(idx);
         } else if ("theme".equals(action)) {
             int curTheme = Store.getInt("theme", 0);
-            if (curTheme >= 3) curTheme = 1;
             int nextTheme = (curTheme + 1) % 3;
             Store.putInt("theme", nextTheme);
             if (reader != null) reader.setTheme(nextTheme);
@@ -686,11 +701,23 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
                 case 2: showToc(); break;
                 case 3: showGoto(); break;
                 case 4: reader.cycleFont(); showMenu(); menu.setSelected(4); break;
-                case 5: reader.setTheme((reader.getTheme() + 1) % 3); showMenu(); menu.setSelected(5); break;
-                case 6: showLibraryTab(TAB_FAV); break;
-                case 7: showLibraryTab(TAB_ALL); break;
-                case 8: backScreen = menu; showHelp(); break;
-                case 9: quit(); break;
+                case 5:
+                    int curUi = Store.getInt("ui_theme", 1);
+                    int nextUi = (curUi + 1) % 2;
+                    Store.putInt("ui_theme", nextUi);
+                    reader.repaint();
+                    showMenu();
+                    menu.setSelected(5);
+                    break;
+                case 6:
+                    reader.setTheme((reader.getTheme() + 1) % 3);
+                    showMenu();
+                    menu.setSelected(6);
+                    break;
+                case 7: showLibraryTab(TAB_FAV); break;
+                case 8: showLibraryTab(TAB_ALL); break;
+                case 9: backScreen = menu; showHelp(); break;
+                case 10: quit(); break;
                 default: break;
             }
         } else if (s == toc) {

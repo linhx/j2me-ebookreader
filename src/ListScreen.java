@@ -134,9 +134,8 @@ public class ListScreen extends Canvas {
 
     protected void paint(Graphics g) {
         int w = getWidth(), h = getHeight();
-        int thMode = Store.getInt("theme", 0);
-        if (thMode >= 3) thMode = 1;
-        boolean dark = (thMode == 1);
+        int uiTheme = Store.getInt("ui_theme", 1);
+        boolean dark = (uiTheme == 1);
         g.setColor(dark ? 0x141414 : 0xFFFFFF);
         g.fillRect(0, 0, w, h);
         int th = titleH(), bh = barH(), rh = rowH();
@@ -159,7 +158,7 @@ public class ListScreen extends Canvas {
                     Ui.vgrad(g, 0, y, w, rh, Ui.RED1, Ui.RED2);
                 }
             } else if ((i & 1) == 1) {
-                g.setColor(dark ? (thMode == 3 ? 0x1C1C1C : 0x161616) : 0xF3F3F3);
+                g.setColor(dark ? 0x1C1C1C : 0xF3F3F3);
                 g.fillRect(0, y, w, rh);
             }
             int x = 6;
@@ -246,9 +245,8 @@ public class ListScreen extends Canvas {
         int boxH = visibleCount * lineStep + 54;
         int dy = (h - boxH) / 2;
 
-        int thMode = Store.getInt("theme", 0);
-        if (thMode >= 3) thMode = 1;
-        boolean dark = (thMode == 1);
+        int uiTheme = Store.getInt("ui_theme", 1);
+        boolean dark = (uiTheme == 1);
 
         // Background
         g.setColor(dark ? 0x1E1E1E : 0xFFFFFF);
