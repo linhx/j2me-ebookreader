@@ -42,18 +42,18 @@ public class ReaderCanvas extends Canvas {
     private static final int[][] THEMES = {
         // background, text, dim, accent
         {0xFFFFFF, 0x1A1A1A, 0x909090, 0x1F5A9E}, // 0: sáng
-        {0x101010, 0xCFCFCF, 0x686868, 0xE8A838}, // 1: tối
-        {0xF4ECD8, 0x3B2F1E, 0x9A8A6E, 0x8B3A1A}, // 2: sepia
-        {0x141414, 0xD4D4D4, 0x707070, 0xE8E8E8}  // 3: opera dark
+        {0x141414, 0xD4D4D4, 0x707070, 0xE8E8E8}, // 1: tối (Opera Dark: nền than chì sâu, điểm xuyết đỏ)
+        {0xF4ECD8, 0x3B2F1E, 0x9A8A6E, 0x8B3A1A}  // 2: sepia
     };
 
-    public boolean isDark() { return theme == 1 || theme == 3; }
+    public boolean isDark() { return theme == 1; }
 
     public ReaderCanvas(ReaderMidlet m) {
         midlet = m;
         setFullScreenMode(true);
         fontSize = Store.getInt("font", 1);
         theme = Store.getInt("theme", 0);
+        if (theme >= THEMES.length) theme = 1;
         applyFont();
     }
 
@@ -422,11 +422,11 @@ public class ReaderCanvas extends Canvas {
         if (frac > 1) frac = 1;
         Ui.scrollbar(g, w - 3, 2, fy - 4, nLines, top, cnt,
                 isDark() ? 0x1A1A1A : 0xEAEAEA,
-                theme == 3 ? 0x484848 : (isDark() ? 0x606060 : t[2]));
+                isDark() ? 0x484848 : t[2]);
         Ui.softBar(g, fy, w, footerH, "Menu", "Mục lục", c1, c2, isDark() ? 0xD0D0D0 : 0x202020);
         g.setColor(isDark() ? 0x363636 : 0x808080);
         g.drawLine(0, fy, w, fy);
-        g.setColor(theme == 3 ? Ui.RED1 : t[3]);
+        g.setColor(isDark() ? Ui.RED1 : t[3]);
         g.fillRect(0, fy + 1, (int) (w * frac), 2);
         g.setFont(small);
         int fty = fy + (footerH - small.getHeight()) / 2;
@@ -438,7 +438,7 @@ public class ReaderCanvas extends Canvas {
             }
             int nhw = small.stringWidth(noteHint) + 12;
             int nhx = (w - nhw) / 2;
-            g.setColor(theme == 3 ? 0x9E2024 : t[3]);
+            g.setColor(isDark() ? 0x9E2024 : t[3]);
             g.fillRoundRect(nhx, fty - 1, nhw, small.getHeight() + 2, 4, 4);
             g.setColor(0xFFFFFF);
             g.drawString(noteHint, w / 2, fty, Graphics.TOP | Graphics.HCENTER);
@@ -459,7 +459,7 @@ public class ReaderCanvas extends Canvas {
             g.setColor(t[2]);
             int ly = y + lhi / 2;
             g.drawLine(w / 4, ly, w - w / 4, ly);
-            g.setColor(theme == 3 ? 0x9E2024 : t[3]);
+            g.setColor(isDark() ? 0x9E2024 : t[3]);
             g.fillRect(w / 2 - 2, ly - 1, 4, 3);
             return;
         }
@@ -523,7 +523,7 @@ public class ReaderCanvas extends Canvas {
             g.drawSubstring(text, ls[i], len, w / 2, y, Graphics.TOP | Graphics.HCENTER);
             if (i + 1 >= nLines || kind(i + 1) != 1) {
                 int uw = Math.min(textW / 3, 50);
-                g.setColor(theme == 3 ? 0x9E2024 : t[3]);
+                g.setColor(isDark() ? 0x9E2024 : t[3]);
                 g.fillRect(w / 2 - uw / 2, y + lhi - 3, uw, 1);
             }
         } else {
@@ -573,12 +573,12 @@ public class ReaderCanvas extends Canvas {
                 int by = ny - padY;
                 int bw = nw + padX * 2;
                 int bh = fNote.getHeight() + padY * 2;
-                g.setColor(theme == 3 ? 0x9E2024 : t[3]);
+                g.setColor(isDark() ? 0x9E2024 : t[3]);
                 g.fillRoundRect(bx, by, bw, bh, 4, 4);
                 g.setColor(0xFFFFFF);
                 g.drawString(nstr, x, ny, Graphics.TOP | Graphics.LEFT);
             } else {
-                g.setColor(theme == 3 ? 0xC05054 : t[3]);
+                g.setColor(isDark() ? 0xC05054 : t[3]);
                 g.drawString(nstr, x, ny, Graphics.TOP | Graphics.LEFT);
             }
             x += nw;
@@ -1103,7 +1103,7 @@ public class ReaderCanvas extends Canvas {
     public void setTheme(int t) {
         theme = Math.max(0, Math.min(THEMES.length - 1, t));
         Store.putInt("theme", theme);
-        String[] nm = {"sáng", "tối", "sepia", "opera dark"};
+        String[] nm = {"sáng", "tối", "sepia"};
         showToast("Giao diện: " + nm[theme]);
         repaint();
     }

@@ -121,9 +121,11 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
         menu.add("Mục lục", Ui.I_PAGE);
         menu.add("Đi tới %", Ui.I_PAGE);
         String[] fs = {"nhỏ", "vừa", "lớn"};
-        String[] th = {"sáng", "tối", "sepia", "opera dark"};
+        String[] th = {"sáng", "tối", "sepia"};
         menu.add("Cỡ chữ: " + fs[reader.getFontSize()], Ui.I_GEAR);
-        menu.add("Giao diện: " + th[reader.getTheme()], Ui.I_GEAR);
+        int rTh = reader.getTheme();
+        if (rTh < 0 || rTh >= th.length) rTh = 0;
+        menu.add("Giao diện: " + th[rTh], Ui.I_GEAR);
         menu.add("Mục ưa thích", Ui.I_STAR);
         menu.add("Tất cả sách", Ui.I_BOOK);
         menu.add("Hướng dẫn phím", Ui.I_GEAR);
@@ -160,7 +162,7 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
                 + "Trái/Phải (4/6), OK: lùi/tiến trang\n"
                 + "1 / 3: chương trước / sau\n"
                 + "Giữ *, bấm Lên/Xuống: đổi cỡ chữ\n"
-                + "#: đổi giao diện (sáng/tối/sepia/opera dark)\n"
+                + "#: đổi giao diện (sáng / tối / sepia)\n"
                 + "Trong danh sách sách:\n"
                 + "Trái/Phải (4/6): đổi Ưa thích / Tất cả\n"
                 + "*: Yêu thích / Bỏ yêu thích sách\n"
@@ -203,8 +205,9 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
         libMenu.add("Đổi thư mục sách", Ui.I_FOLDER);
         libMenuActions.addElement("folder");
 
-        String[] th = {"sáng", "tối", "sepia", "opera dark"};
+        String[] th = {"sáng", "tối", "sepia"};
         int curTheme = Store.getInt("theme", 0);
+        if (curTheme >= 3) curTheme = 1;
         if (curTheme < 0 || curTheme >= th.length) curTheme = 0;
         libMenu.add("Giao diện: " + th[curTheme], Ui.I_GEAR);
         libMenuActions.addElement("theme");
@@ -240,7 +243,8 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
             showFolderPicker();
         } else if ("theme".equals(action)) {
             int curTheme = Store.getInt("theme", 0);
-            int nextTheme = (curTheme + 1) % 4;
+            if (curTheme >= 3) curTheme = 1;
+            int nextTheme = (curTheme + 1) % 3;
             Store.putInt("theme", nextTheme);
             if (reader != null) reader.setTheme(nextTheme);
             showLibraryMenu();
@@ -682,7 +686,7 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
                 case 2: showToc(); break;
                 case 3: showGoto(); break;
                 case 4: reader.cycleFont(); showMenu(); menu.setSelected(4); break;
-                case 5: reader.setTheme((reader.getTheme() + 1) % 4); showMenu(); menu.setSelected(5); break;
+                case 5: reader.setTheme((reader.getTheme() + 1) % 3); showMenu(); menu.setSelected(5); break;
                 case 6: showLibraryTab(TAB_FAV); break;
                 case 7: showLibraryTab(TAB_ALL); break;
                 case 8: backScreen = menu; showHelp(); break;
