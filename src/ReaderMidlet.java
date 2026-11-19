@@ -22,6 +22,9 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
     private final Command cOk = new Command("OK", Command.OK, 1);
 
     private ListScreen menu, browser, toc;
+    private ListScreen libMenu;
+    private Vector libMenuActions = new Vector();
+    private Displayable backScreen = null;
     private Form gotoForm;
     private Gauge gotoGauge;
 
@@ -162,11 +165,102 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
                 + "Trái/Phải (4/6): đổi Ưa thích / Tất cả\n"
                 + "*: Yêu thích / Bỏ yêu thích sách\n"
                 + "0: Xem tên sách đầy đủ\n"
-                + "Phím mềm trái: Menu / Thư mục\n"
-                + "Phím mềm phải: Mục lục / Thoát\n");
+                + "Phím mềm trái: Menu\n"
+                + "Phím mềm phải: Thoát / Quay lại\n");
         f.addCommand(cBack);
         f.setCommandListener(this);
         display.setCurrent(f);
+    }
+
+    private void showAbout() {
+        Form f = new Form("Giới thiệu");
+        f.append("BookReader v1.0\n"
+                + "Trình đọc sách EPUB/HTML/TXT cho Nokia C2-01 & thiết bị Java J2ME.\n\n"
+                + "Thiết kế theo phong cách Opera Mini 4.4.\n"
+                + "Hỗ trợ mục Ưa thích, căn đều 2 lề, xem chú thích và nén RAM thông minh.\n");
+        f.addCommand(cBack);
+        f.setCommandListener(this);
+        display.setCurrent(f);
+    }
+
+    public void showLibraryMenu() {
+        libMenu = new ListScreen(this, "Menu");
+        libMenuActions = new Vector();
+
+        if (reader != null && reader.getBook() != null) {
+            libMenu.add("Tiếp tục đọc", Ui.I_BOOK);
+            libMenuActions.addElement("resume");
+        } else {
+            String lastUrl = Store.get("last", "");
+            if (lastUrl != null && lastUrl.length() > 0) {
+                int sl = lastUrl.lastIndexOf('/');
+                String n = sl >= 0 ? lastUrl.substring(sl + 1) : lastUrl;
+                libMenu.add("Đọc tiếp: " + stripExt(n), Ui.I_BOOK);
+                libMenuActions.addElement("last");
+            }
+        }
+
+        libMenu.add("Đổi thư mục sách", Ui.I_FOLDER);
+        libMenuActions.addElement("folder");
+
+        String[] th = {"sáng", "tối", "sepia", "opera dark"};
+        int curTheme = Store.getInt("theme", 0);
+        if (curTheme < 0 || curTheme >= th.length) curTheme = 0;
+        libMenu.add("Giao diện: " + th[curTheme], Ui.I_GEAR);
+        libMenuActions.addElement("theme");
+
+        String[] fs = {"nhỏ", "vừa", "lớn"};
+        int curFont = Store.getInt("font", 1);
+        if (curFont < 0 || curFont >= fs.length) curFont = 1;
+        libMenu.add("Cỡ chữ: " + fs[curFont], Ui.I_GEAR);
+        libMenuActions.addElement("font");
+
+        libMenu.add("Hướng dẫn phím", Ui.I_GEAR);
+        libMenuActions.addElement("help");
+
+        libMenu.add("Giới thiệu", Ui.I_BOOK);
+        libMenuActions.addElement("about");
+
+        libMenu.add("Thoát", Ui.I_GEAR);
+        libMenuActions.addElement("quit");
+
+        libMenu.setSoftKeys("Chọn", "Quay lại");
+        display.setCurrent(libMenu);
+    }
+
+    private void handleLibMenuSelect(int idx) {
+        if (idx < 0 || idx >= libMenuActions.size()) return;
+        String action = (String) libMenuActions.elementAt(idx);
+        if ("resume".equals(action)) {
+            display.setCurrent(reader);
+        } else if ("last".equals(action)) {
+            String lastUrl = Store.get("last", "");
+            if (lastUrl != null && lastUrl.length() > 0) openFile(lastUrl);
+        } else if ("folder".equals(action)) {
+            showFolderPicker();
+        } else if ("theme".equals(action)) {
+            int curTheme = Store.getInt("theme", 0);
+            int nextTheme = (curTheme + 1) % 4;
+            Store.putInt("theme", nextTheme);
+            if (reader != null) reader.setTheme(nextTheme);
+            showLibraryMenu();
+            libMenu.setSelected(idx);
+        } else if ("font".equals(action)) {
+            int curFont = Store.getInt("font", 1);
+            int nextFont = (curFont + 1) % 3;
+            Store.putInt("font", nextFont);
+            if (reader != null) reader.setFontSize(nextFont);
+            showLibraryMenu();
+            libMenu.setSelected(idx);
+        } else if ("help".equals(action)) {
+            backScreen = libMenu;
+            showHelp();
+        } else if ("about".equals(action)) {
+            backScreen = libMenu;
+            showAbout();
+        } else if ("quit".equals(action)) {
+            quit();
+        }
     }
 
     // ------------------------------------------------------------ browser
@@ -351,11 +445,11 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
             if (libraryTab == TAB_FAV && added == 0) {
                 ls.add("(Chưa có sách ưa thích. Nhấn * để thêm)", Ui.I_NONE);
             } else if (libraryTab == TAB_ALL && added == 0) {
-                ls.add("(Không có sách. Bấm \"Thư mục\" để đổi)", Ui.I_NONE);
+                ls.add("(Không có sách. Bấm \"Menu\" -> Đổi thư mục)", Ui.I_NONE);
             }
 
             ls.setTabs(new String[] {"★ Ưa thích (" + favCount + ")", "Tất cả (" + n + ")"}, libraryTab);
-            ls.setSoftKeys("Thư mục", (reader != null && reader.getBook() != null) ? "Quay lại" : "Thoát");
+            ls.setSoftKeys("Menu", (reader != null && reader.getBook() != null) ? "Quay lại" : "Thoát");
             if (keepName != null) {
                 int newSel = entries.indexOf(keepName);
                 if (newSel >= 0) ls.setSelected(newSel);
@@ -503,7 +597,7 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
                     quit();
                 }
             } else if (leftKey) {
-                showFolderPicker();
+                showLibraryMenu();
             } else {
                 if (reader != null && reader.getBook() != null) {
                     display.setCurrent(reader);
@@ -514,6 +608,17 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
         } else if (s == menu || s == toc) {
             if (!leftKey) display.setCurrent(reader);
             else onSelect(s, s.getSelected());
+        } else if (s == libMenu) {
+            if (!leftKey) {
+                if (browser != null) {
+                    display.setCurrent(browser);
+                    browser.repaint();
+                } else {
+                    showLibrary();
+                }
+            } else {
+                handleLibMenuSelect(s.getSelected());
+            }
         }
     }
 
@@ -560,6 +665,8 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
             } else {
                 openFile(curDir + name);
             }
+        } else if (s == libMenu) {
+            handleLibMenuSelect(idx);
         } else if (s == menu) {
             String curUrl = reader.getUrl();
             boolean isFav = curUrl != null && Store.isFavorite(curUrl);
@@ -578,7 +685,7 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
                 case 5: reader.setTheme((reader.getTheme() + 1) % 4); showMenu(); menu.setSelected(5); break;
                 case 6: showLibraryTab(TAB_FAV); break;
                 case 7: showLibraryTab(TAB_ALL); break;
-                case 8: showHelp(); break;
+                case 8: backScreen = menu; showHelp(); break;
                 case 9: quit(); break;
                 default: break;
             }
@@ -593,8 +700,13 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
         if (d == gotoForm && c == cOk) {
             reader.gotoPercent(gotoGauge.getValue());
             display.setCurrent(reader);
-        } else {
+        } else if (backScreen != null) {
+            display.setCurrent(backScreen);
+            backScreen = null;
+        } else if (reader != null && reader.getBook() != null) {
             showMenu();
+        } else {
+            showLibrary();
         }
     }
 }
