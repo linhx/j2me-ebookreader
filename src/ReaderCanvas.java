@@ -335,7 +335,7 @@ public class ReaderCanvas extends Canvas {
             if (i >= pe) {
                 end = pe; next = pe;
             } else if (lastSpace > pos) {
-                end = lastSpace; next = lastSpace + 1; j = (knd == 0);
+                end = lastSpace; next = lastSpace + 1; j = (knd == 0 || knd == 6);
             } else {
                 if (i == pos) i++;
                 end = i; next = i;
@@ -464,15 +464,13 @@ public class ReaderCanvas extends Canvas {
             return;
         }
         if (knd == 6) {
-            // Image caption: smaller, italic, secondary dim color, centered
+            // Image caption: smaller, italic, secondary dim color, justified on both sides
             g.setFont(fCaption);
             g.setColor(t[2]);
             int clen = le[i] - ls[i];
             if (clen <= 0) return;
-            int sw = fCaption.substringWidth(text, ls[i], clen);
-            int cx = margin + (textW - sw) / 2;
-            if (cx < margin) cx = margin;
-            g.drawSubstring(text, ls[i], clen, cx, y, Graphics.TOP | Graphics.LEFT);
+            if (just(i) && drawJustified(g, i, margin, y, fCaption)) return;
+            g.drawSubstring(text, ls[i], clen, margin, y, Graphics.TOP | Graphics.LEFT);
             return;
         }
         int len = le[i] - ls[i];
@@ -837,9 +835,13 @@ public class ReaderCanvas extends Canvas {
         if (noteScroll > maxScroll) noteScroll = maxScroll;
         if (noteScroll < 0) noteScroll = 0;
 
+        int noteBodyW = dw - 24;
         for (int i = noteScroll; i < bodyLines.size() && i < noteScroll + visibleLines; i++) {
             String line = (String) bodyLines.elementAt(i);
-            g.drawString(line, dx + 8, by, Graphics.TOP | Graphics.LEFT);
+            boolean isLast = (i == bodyLines.size() - 1);
+            if (isLast || !drawJustifiedString(g, line, dx + 8, by, noteBodyW, bf)) {
+                g.drawString(line, dx + 8, by, Graphics.TOP | Graphics.LEFT);
+            }
             by += lineStep;
         }
 
@@ -857,6 +859,33 @@ public class ReaderCanvas extends Canvas {
         g.setColor(t[3]);
         String footerText = maxScroll > 0 ? "Cuộn: Lên/Xuống (2/8) | OK: Đóng" : "Bấm OK để đóng";
         g.drawString(footerText, dx + dw / 2, fy + 4, Graphics.TOP | Graphics.HCENTER);
+    }
+
+    private boolean drawJustifiedString(Graphics g, String str, int x, int y, int availW, Font f) {
+        int natural = f.stringWidth(str);
+        int spaces = 0;
+        int len = str.length();
+        for (int k = 0; k < len; k++) if (str.charAt(k) == ' ') spaces++;
+        int extra = availW - natural;
+        if (spaces == 0 || extra <= 0 || extra > availW / 5) return false;
+        int pos = 0, done = 0;
+        int cx = x;
+        for (int k = 0; k <= len; k++) {
+            if (k == len || str.charAt(k) == ' ') {
+                if (k > pos) {
+                    String word = str.substring(pos, k);
+                    g.drawString(word, cx, y, Graphics.TOP | Graphics.LEFT);
+                    cx += f.stringWidth(word);
+                }
+                if (k < len) {
+                    int add = extra / spaces + (done < extra % spaces ? 1 : 0);
+                    cx += f.charWidth(' ') + add;
+                    done++;
+                }
+                pos = k + 1;
+            }
+        }
+        return true;
     }
 
     private java.util.Vector wrapNoteBody(String text, int maxW, Font f) {
