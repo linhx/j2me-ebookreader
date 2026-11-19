@@ -50,6 +50,7 @@ public abstract class Book {
     public Note[] getNotes() { return null; }
     public int[] getImageDimensions(String path) { return null; }
     public javax.microedition.lcdui.Image getImage(String path) { return null; }
+    public int chapterParts(int i) { return 1; }
 
     public static Book open(String url) throws IOException {
         String l = url.toLowerCase();
@@ -335,6 +336,13 @@ public abstract class Book {
 
         public Note[] getNotes() {
             return currentNotes;
+        }
+
+        public int chapterParts(int i) {
+            if (zip == null || files == null || i < 0 || i >= files.length) return 1;
+            int[] e = zip.getEntry(files[i]);
+            if (e == null || e[2] <= Html.MAX_PART_CHARS) return 1;
+            return Math.max(1, (e[2] + 28000) / Html.MAX_PART_CHARS);
         }
 
         public String chapter(int i, int skipChars, int[] outMeta) throws IOException {
