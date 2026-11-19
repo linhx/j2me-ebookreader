@@ -739,30 +739,39 @@ public class ReaderCanvas extends Canvas {
     }
 
     private void navNote(int dir) {
-        if (notes == null || notes.length == 0) {
-            showToast("Chương này không có chú thích");
+        if (notes == null || notes.length == 0 || nLines == 0) {
+            showToast("Trang này không có chú thích");
             return;
         }
-        if (selectedNote < 0) {
-            int curOff = ls[top];
-            selectedNote = 0;
-            for (int i = 0; i < notes.length; i++) {
-                if (notes[i].charOffset >= curOff) {
-                    selectedNote = i;
-                    break;
-                }
+        int cnt = fits(top);
+        int pageStart = ls[top];
+        int pageEnd = (top + cnt < nLines) ? ls[top + cnt] : text.length();
+
+        int first = -1, last = -1, count = 0;
+        for (int i = 0; i < notes.length; i++) {
+            int off = notes[i].charOffset;
+            if (off >= pageStart && off < pageEnd) {
+                if (first < 0) first = i;
+                last = i;
+                count++;
             }
-        } else {
+        }
+
+        if (count == 0) {
+            showToast("Trang này không có chú thích");
+            return;
+        }
+
+        if (selectedNote < first || selectedNote > last) {
+            selectedNote = dir > 0 ? first : last;
+        } else if (count > 1) {
             selectedNote += dir;
-            if (selectedNote >= notes.length) selectedNote = 0;
-            else if (selectedNote < 0) selectedNote = notes.length - 1;
+            if (selectedNote > last) selectedNote = first;
+            else if (selectedNote < first) selectedNote = last;
         }
+
         Book.Note n = notes[selectedNote];
-        int targetLine = lineAt(n.charOffset);
-        if (targetLine < top || targetLine >= top + fits(top)) {
-            top = Math.max(0, targetLine - 2);
-        }
-        showToast("Chú thích [" + n.label + "/" + notes.length + "] - Bấm OK để đọc");
+        showToast("Chú thích [" + n.label + "] - Bấm OK để đọc");
         repaint();
     }
 
