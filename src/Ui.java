@@ -26,15 +26,27 @@ public class Ui {
 
     /** Title bar: red gradient with white bold text and optional right-aligned info. */
     public static void titleBar(Graphics g, int w, int h, String title, String right) {
-        vgrad(g, 0, 0, w, h, RED1, RED2);
-        g.setColor(0xFF6A6F);
-        g.drawLine(0, 0, w, 0);
-        g.setColor(0x6E0C10);
-        g.drawLine(0, h - 1, w, h - 1);
+        titleBar(g, w, h, title, right, false);
+    }
+
+    public static void titleBar(Graphics g, int w, int h, String title, String right, boolean dark) {
+        if (dark) {
+            vgrad(g, 0, 0, w, h, 0x2A2A2A, 0x1A1A1A);
+            g.setColor(0x3A3A3A);
+            g.drawLine(0, 0, w, 0);
+            g.setColor(0x101010);
+            g.drawLine(0, h - 1, w, h - 1);
+        } else {
+            vgrad(g, 0, 0, w, h, RED1, RED2);
+            g.setColor(0xFF6A6F);
+            g.drawLine(0, 0, w, 0);
+            g.setColor(0x6E0C10);
+            g.drawLine(0, h - 1, w, h - 1);
+        }
         Font f = Font.getFont(Font.FACE_PROPORTIONAL, Font.STYLE_BOLD, Font.SIZE_SMALL);
         g.setFont(f);
         int rw = right == null ? 0 : f.stringWidth(right) + 6;
-        g.setColor(0x5A0A0D);
+        g.setColor(dark ? 0x0A0A0A : 0x5A0A0D);
         String t = fit(f, title, w - 8 - rw);
         int ty = (h - f.getHeight()) / 2;
         g.drawString(t, 5, ty + 1, Graphics.TOP | Graphics.LEFT);
@@ -83,14 +95,24 @@ public class Ui {
         // Box body
         vgrad(g, bx, by + headH, bw, bh - headH, dark ? 0x2A2A2A : 0xFFFFFF, dark ? 0x1A1A1A : 0xEAEAEA);
 
-        // Red gradient header bar
-        vgrad(g, bx, by, bw, headH, RED1, RED2);
-        g.setColor(0xFF6A6F);
-        g.drawLine(bx + 1, by + 1, bx + bw - 2, by + 1);
+        // Header bar
+        if (dark) {
+            vgrad(g, bx, by, bw, headH, 0x323232, 0x202020);
+            g.setColor(0x444444);
+            g.drawLine(bx + 1, by + 1, bx + bw - 2, by + 1);
+            g.setColor(RED1);
+            g.drawLine(bx + 1, by + headH - 1, bx + bw - 2, by + headH - 1);
+        } else {
+            vgrad(g, bx, by, bw, headH, RED1, RED2);
+            g.setColor(0xFF6A6F);
+            g.drawLine(bx + 1, by + 1, bx + bw - 2, by + 1);
+        }
         icon(g, I_BOOK, bx + 6, by + (headH - 12) / 2, true);
         g.setFont(bf);
-        g.setColor(0x5A0A0D);
-        g.drawString("BookReader", bx + 23, by + 4, Graphics.TOP | Graphics.LEFT);
+        if (!dark) {
+            g.setColor(0x5A0A0D);
+            g.drawString("BookReader", bx + 23, by + 4, Graphics.TOP | Graphics.LEFT);
+        }
         g.setColor(0xFFFFFF);
         g.drawString("BookReader", bx + 22, by + 3, Graphics.TOP | Graphics.LEFT);
 
@@ -117,15 +139,25 @@ public class Ui {
         g.drawLine(px + 1, py + 1, px + fillW, py + 1);
 
         // Outer border
-        g.setColor(dark ? 0x606060 : 0x6E0C10);
+        g.setColor(dark ? 0x404040 : 0x6E0C10);
         g.drawRect(bx, by, bw - 1, bh - 1);
     }
 
     /** Tab bar: two or more tabs with red gradient and active indicator. */
     public static void tabBar(Graphics g, int w, int h, String[] tabs, int active) {
-        vgrad(g, 0, 0, w, h, 0x851014, 0x5C0B0E);
-        g.setColor(0x50080B);
-        g.drawLine(0, h - 1, w, h - 1);
+        tabBar(g, w, h, tabs, active, false);
+    }
+
+    public static void tabBar(Graphics g, int w, int h, String[] tabs, int active, boolean dark) {
+        if (dark) {
+            vgrad(g, 0, 0, w, h, 0x202020, 0x141414);
+            g.setColor(0x101010);
+            g.drawLine(0, h - 1, w, h - 1);
+        } else {
+            vgrad(g, 0, 0, w, h, 0x851014, 0x5C0B0E);
+            g.setColor(0x50080B);
+            g.drawLine(0, h - 1, w, h - 1);
+        }
         int n = tabs.length;
         int tw = w / n;
         Font fNorm = Font.getFont(Font.FACE_PROPORTIONAL, Font.STYLE_PLAIN, Font.SIZE_SMALL);
@@ -135,13 +167,21 @@ public class Ui {
             int curW = (i == n - 1) ? (w - tx) : tw;
             boolean act = (i == active);
             if (act) {
-                vgrad(g, tx, 0, curW, h - 1, RED1, RED2);
-                g.setColor(0xFF7A7F);
-                g.drawLine(tx, 0, tx + curW - 1, 0);
-                g.setColor(0xFFFFFF);
-                g.fillRect(tx + 6, h - 2, curW - 12, 2);
+                if (dark) {
+                    vgrad(g, tx, 0, curW, h - 1, 0x363636, 0x242424);
+                    g.setColor(0x484848);
+                    g.drawLine(tx, 0, tx + curW - 1, 0);
+                    g.setColor(RED1);
+                    g.fillRect(tx + 8, h - 2, curW - 16, 2);
+                } else {
+                    vgrad(g, tx, 0, curW, h - 1, RED1, RED2);
+                    g.setColor(0xFF7A7F);
+                    g.drawLine(tx, 0, tx + curW - 1, 0);
+                    g.setColor(0xFFFFFF);
+                    g.fillRect(tx + 6, h - 2, curW - 12, 2);
+                }
             } else {
-                g.setColor(0x6E0C10);
+                g.setColor(dark ? 0x181818 : 0x6E0C10);
                 g.drawLine(tx, 2, tx, h - 4);
             }
             Font f = act ? fBold : fNorm;
@@ -149,12 +189,14 @@ public class Ui {
             int ty = (h - f.getHeight()) / 2;
             int cx = tx + curW / 2;
             if (act) {
-                g.setColor(0x5A0A0D);
-                g.drawString(tabs[i], cx + 1, ty + 1, Graphics.TOP | Graphics.HCENTER);
+                if (!dark) {
+                    g.setColor(0x5A0A0D);
+                    g.drawString(tabs[i], cx + 1, ty + 1, Graphics.TOP | Graphics.HCENTER);
+                }
                 g.setColor(0xFFFFFF);
                 g.drawString(tabs[i], cx, ty, Graphics.TOP | Graphics.HCENTER);
             } else {
-                g.setColor(0xE8B0B2);
+                g.setColor(dark ? 0x888888 : 0xE8B0B2);
                 g.drawString(tabs[i], cx, ty, Graphics.TOP | Graphics.HCENTER);
             }
         }

@@ -44,7 +44,7 @@ public class ReaderCanvas extends Canvas {
         {0xFFFFFF, 0x1A1A1A, 0x909090, 0x1F5A9E}, // 0: sáng
         {0x101010, 0xCFCFCF, 0x686868, 0xE8A838}, // 1: tối
         {0xF4ECD8, 0x3B2F1E, 0x9A8A6E, 0x8B3A1A}, // 2: sepia
-        {0x181818, 0xE0E0E0, 0x888888, 0xE2262D}  // 3: opera dark
+        {0x141414, 0xD4D4D4, 0x707070, 0xE8E8E8}  // 3: opera dark
     };
 
     public boolean isDark() { return theme == 1 || theme == 3; }
@@ -383,10 +383,10 @@ public class ReaderCanvas extends Canvas {
         g.fillRect(0, 0, w, h);
         g.setColor(t[1]);
         int fy = h - footerH;
-        int c1 = isDark() ? 0x383838 : theme == 2 ? 0xE9DDC1 : 0xF0F0F0;
-        int c2 = isDark() ? 0x1C1C1C : theme == 2 ? 0xC9B993 : 0xB4B4B4;
+        int c1 = isDark() ? 0x282828 : theme == 2 ? 0xE9DDC1 : 0xF0F0F0;
+        int c2 = isDark() ? 0x161616 : theme == 2 ? 0xC9B993 : 0xB4B4B4;
         if (busy) {
-            Ui.softBar(g, fy, w, footerH, "Menu", "Mục lục", c1, c2, isDark() ? 0xE0E0E0 : 0x202020);
+            Ui.softBar(g, fy, w, footerH, "Menu", "Mục lục", c1, c2, isDark() ? 0xD0D0D0 : 0x202020);
             Ui.loadingBox(g, w, h, busyMsg, isDark());
             return;
         }
@@ -420,11 +420,13 @@ public class ReaderCanvas extends Canvas {
 
         double frac = (chapter + chProg) / total;
         if (frac > 1) frac = 1;
-        Ui.scrollbar(g, w - 3, 2, fy - 4, nLines, top, cnt, isDark() ? 0x262626 : 0xEAEAEA, theme == 3 ? Ui.RED1 : t[2]);
-        Ui.softBar(g, fy, w, footerH, "Menu", "Mục lục", c1, c2, isDark() ? 0xE0E0E0 : 0x202020);
-        g.setColor(0x808080);
+        Ui.scrollbar(g, w - 3, 2, fy - 4, nLines, top, cnt,
+                isDark() ? 0x1A1A1A : 0xEAEAEA,
+                theme == 3 ? 0x484848 : (isDark() ? 0x606060 : t[2]));
+        Ui.softBar(g, fy, w, footerH, "Menu", "Mục lục", c1, c2, isDark() ? 0xD0D0D0 : 0x202020);
+        g.setColor(isDark() ? 0x363636 : 0x808080);
         g.drawLine(0, fy, w, fy);
-        g.setColor(t[3]);
+        g.setColor(theme == 3 ? Ui.RED1 : t[3]);
         g.fillRect(0, fy + 1, (int) (w * frac), 2);
         g.setFont(small);
         int fty = fy + (footerH - small.getHeight()) / 2;
@@ -436,12 +438,12 @@ public class ReaderCanvas extends Canvas {
             }
             int nhw = small.stringWidth(noteHint) + 12;
             int nhx = (w - nhw) / 2;
-            g.setColor(t[3]);
+            g.setColor(theme == 3 ? 0x9E2024 : t[3]);
             g.fillRoundRect(nhx, fty - 1, nhw, small.getHeight() + 2, 4, 4);
             g.setColor(0xFFFFFF);
             g.drawString(noteHint, w / 2, fty, Graphics.TOP | Graphics.HCENTER);
         } else {
-            g.setColor(isDark() ? 0xE0E0E0 : 0x202020);
+            g.setColor(isDark() ? 0xD0D0D0 : 0x202020);
             g.drawString((chapter + 1) + "/" + total + "  " + (int) (frac * 100) + "%", w / 2, fty,
                     Graphics.TOP | Graphics.HCENTER);
         }
@@ -457,7 +459,7 @@ public class ReaderCanvas extends Canvas {
             g.setColor(t[2]);
             int ly = y + lhi / 2;
             g.drawLine(w / 4, ly, w - w / 4, ly);
-            g.setColor(t[3]);
+            g.setColor(theme == 3 ? 0x9E2024 : t[3]);
             g.fillRect(w / 2 - 2, ly - 1, 4, 3);
             return;
         }
@@ -521,6 +523,7 @@ public class ReaderCanvas extends Canvas {
             g.drawSubstring(text, ls[i], len, w / 2, y, Graphics.TOP | Graphics.HCENTER);
             if (i + 1 >= nLines || kind(i + 1) != 1) {
                 int uw = Math.min(textW / 3, 50);
+                g.setColor(theme == 3 ? 0x9E2024 : t[3]);
                 g.fillRect(w / 2 - uw / 2, y + lhi - 3, uw, 1);
             }
         } else {
@@ -570,12 +573,12 @@ public class ReaderCanvas extends Canvas {
                 int by = ny - padY;
                 int bw = nw + padX * 2;
                 int bh = fNote.getHeight() + padY * 2;
-                g.setColor(t[3]);
+                g.setColor(theme == 3 ? 0x9E2024 : t[3]);
                 g.fillRoundRect(bx, by, bw, bh, 4, 4);
                 g.setColor(0xFFFFFF);
                 g.drawString(nstr, x, ny, Graphics.TOP | Graphics.LEFT);
             } else {
-                g.setColor(t[3]);
+                g.setColor(theme == 3 ? 0xC05054 : t[3]);
                 g.drawString(nstr, x, ny, Graphics.TOP | Graphics.LEFT);
             }
             x += nw;
@@ -845,13 +848,21 @@ public class ReaderCanvas extends Canvas {
         int dy = (h - boxH) / 2;
 
         // Dialog background
-        g.setColor(t[0]);
+        g.setColor(isDark() ? 0x1C1C1C : t[0]);
         g.fillRoundRect(dx, dy, dw, boxH, 8, 8);
-        g.setColor(t[3]);
+        g.setColor(isDark() ? 0x383838 : t[3]);
         g.drawRoundRect(dx, dy, dw, boxH, 8, 8);
 
         // Header bar
-        Ui.vgrad(g, dx + 1, dy + 1, dw - 2, barH, Ui.RED1, Ui.RED2);
+        if (isDark()) {
+            Ui.vgrad(g, dx + 1, dy + 1, dw - 2, barH, 0x303030, 0x202020);
+            g.setColor(0x444444);
+            g.drawLine(dx + 1, dy + 1, dx + dw - 2, dy + 1);
+            g.setColor(Ui.RED1);
+            g.drawLine(dx + 1, dy + barH, dx + dw - 2, dy + barH);
+        } else {
+            Ui.vgrad(g, dx + 1, dy + 1, dw - 2, barH, Ui.RED1, Ui.RED2);
+        }
         g.setColor(0xFFFFFF);
         Font fHeader = (fontSize == 2) ? fSub : Font.getFont(Font.FACE_PROPORTIONAL, Font.STYLE_BOLD, Font.SIZE_SMALL);
         g.setFont(fHeader);
@@ -859,7 +870,7 @@ public class ReaderCanvas extends Canvas {
 
         // Body text
         g.setFont(bf);
-        g.setColor(t[1]);
+        g.setColor(isDark() ? 0xD0D0D0 : t[1]);
         int by = dy + barH + 8;
         int maxScroll = Math.max(0, bodyLines.size() - visibleLines);
         if (noteScroll > maxScroll) noteScroll = maxScroll;
@@ -878,15 +889,15 @@ public class ReaderCanvas extends Canvas {
         // Scrollbar if content exceeds visible area
         if (bodyLines.size() > visibleLines) {
             Ui.scrollbar(g, dx + dw - 7, dy + barH + 5, boxH - barH - footH - 10,
-                    bodyLines.size(), noteScroll, visibleLines, t[2], t[3]);
+                    bodyLines.size(), noteScroll, visibleLines, isDark() ? 0x242424 : t[2], isDark() ? 0x484848 : t[3]);
         }
 
         // Footer
         int fy = dy + boxH - footH;
-        g.setColor(t[2]);
+        g.setColor(isDark() ? 0x303030 : t[2]);
         g.drawLine(dx + 2, fy, dx + dw - 2, fy);
         g.setFont(small);
-        g.setColor(t[3]);
+        g.setColor(isDark() ? 0x909090 : t[3]);
         String footerText = maxScroll > 0 ? "2/8: Cuộn  |  OK: Đóng" : "Bấm OK để đóng";
         g.drawString(footerText, dx + dw / 2, fy + (footH - small.getHeight()) / 2, Graphics.TOP | Graphics.HCENTER);
     }

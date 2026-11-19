@@ -136,7 +136,7 @@ public class ListScreen extends Canvas {
         int w = getWidth(), h = getHeight();
         int thMode = Store.getInt("theme", 0);
         boolean dark = (thMode == 1 || thMode == 3);
-        g.setColor(dark ? (thMode == 3 ? 0x181818 : 0x101010) : 0xFFFFFF);
+        g.setColor(dark ? (thMode == 3 ? 0x141414 : 0x101010) : 0xFFFFFF);
         g.fillRect(0, 0, w, h);
         int th = titleH(), bh = barH(), rh = rowH();
         int v = visibleRows();
@@ -147,9 +147,18 @@ public class ListScreen extends Canvas {
             int i = first + k;
             boolean s = i == sel;
             if (s) {
-                Ui.vgrad(g, 0, y, w, rh, Ui.RED1, Ui.RED2);
+                if (dark) {
+                    Ui.vgrad(g, 0, y, w, rh, 0x363636, 0x222222);
+                    g.setColor(0x404040);
+                    g.drawLine(0, y, w, y);
+                    g.drawLine(0, y + rh - 1, w, y + rh - 1);
+                    g.setColor(Ui.RED1);
+                    g.fillRect(0, y, 3, rh);
+                } else {
+                    Ui.vgrad(g, 0, y, w, rh, Ui.RED1, Ui.RED2);
+                }
             } else if ((i & 1) == 1) {
-                g.setColor(dark ? (thMode == 3 ? 0x222222 : 0x1A1A1A) : 0xF3F3F3);
+                g.setColor(dark ? (thMode == 3 ? 0x1C1C1C : 0x161616) : 0xF3F3F3);
                 g.fillRect(0, y, w, rh);
             }
             int x = 6;
@@ -158,7 +167,7 @@ public class ListScreen extends Canvas {
                 x += 19;
             }
             g.setFont(s ? bold : font);
-            g.setColor(s ? 0xFFFFFF : (dark ? 0xE4E4E4 : 0x202020));
+            g.setColor(s ? 0xFFFFFF : (dark ? 0xD0D0D0 : 0x202020));
             String fullText = (String) labels.elementAt(i);
             int availW = w - x - 10;
             int tw = (s ? bold : font).stringWidth(fullText);
@@ -171,26 +180,30 @@ public class ListScreen extends Canvas {
                 g.drawString(t, x, y + (rh - font.getHeight()) / 2, Graphics.TOP | Graphics.LEFT);
             }
             if (!s) {
-                g.setColor(dark ? 0x2C2C2C : 0xDCDCDC);
+                g.setColor(dark ? 0x242424 : 0xDCDCDC);
                 g.drawLine(0, y + rh - 1, w, y + rh - 1);
             }
             y += rh;
         }
         Ui.scrollbar(g, w - 4, th, h - th - bh, n, first, v,
-                dark ? 0x242424 : 0xE6E6E6,
-                thMode == 3 ? Ui.RED1 : (dark ? 0x606060 : 0xB0B0B0));
+                dark ? 0x1A1A1A : 0xE6E6E6,
+                dark ? 0x484848 : 0xB0B0B0);
         if (tabs != null && tabs.length > 1) {
-            Ui.tabBar(g, w, th, tabs, activeTab);
+            Ui.tabBar(g, w, th, tabs, activeTab, dark);
         } else {
-            Ui.titleBar(g, w, th, title, n > 0 ? (sel + 1) + "/" + n : null);
+            Ui.titleBar(g, w, th, title, n > 0 ? (sel + 1) + "/" + n : null, dark);
         }
-        int sc1 = dark ? 0x383838 : 0xF0F0F0;
-        int sc2 = dark ? 0x1C1C1C : 0xB4B4B4;
-        int sct = dark ? 0xE0E0E0 : 0x202020;
+        int sc1 = dark ? 0x282828 : 0xF0F0F0;
+        int sc2 = dark ? 0x161616 : 0xB4B4B4;
+        int sct = dark ? 0xD0D0D0 : 0x202020;
         Ui.softBar(g, h - bh, w, bh, left, right, sc1, sc2, sct);
+        if (dark) {
+            g.setColor(0x363636);
+            g.drawLine(0, h - bh, w, h - bh);
+        }
         if (n > 0 && sel >= 0 && sel < n && !showPreview) {
             g.setFont(font);
-            g.setColor(dark ? 0x909090 : 0x707070);
+            g.setColor(dark ? 0x888888 : 0x707070);
             if (tabs != null && tabs.length > 1) {
                 g.drawString("*: Thích | 0: Tên", w / 2, h - bh + (bh - font.getHeight()) / 2 + 1, Graphics.TOP | Graphics.HCENTER);
             } else {
@@ -236,20 +249,28 @@ public class ListScreen extends Canvas {
         boolean dark = (thMode == 1 || thMode == 3);
 
         // Background
-        g.setColor(dark ? 0x222222 : 0xFFFFFF);
+        g.setColor(dark ? 0x1E1E1E : 0xFFFFFF);
         g.fillRoundRect(dx, dy, dw, boxH, 8, 8);
-        g.setColor(0x9C1217);
+        g.setColor(dark ? 0x3E3E3E : 0x9C1217);
         g.drawRoundRect(dx, dy, dw, boxH, 8, 8);
 
         // Header
         int barH = 22;
-        Ui.vgrad(g, dx + 1, dy + 1, dw - 2, barH, Ui.RED1, Ui.RED2);
+        if (dark) {
+            Ui.vgrad(g, dx + 1, dy + 1, dw - 2, barH, 0x323232, 0x202020);
+            g.setColor(0x444444);
+            g.drawLine(dx + 1, dy + 1, dx + dw - 2, dy + 1);
+            g.setColor(Ui.RED1);
+            g.drawLine(dx + 1, dy + barH, dx + dw - 2, dy + barH);
+        } else {
+            Ui.vgrad(g, dx + 1, dy + 1, dw - 2, barH, Ui.RED1, Ui.RED2);
+        }
         g.setColor(0xFFFFFF);
         g.setFont(hf);
         g.drawString("Tên đầy đủ", dx + 8, dy + 3, Graphics.TOP | Graphics.LEFT);
 
         // Body lines
-        g.setColor(dark ? 0xE4E4E4 : 0x1A1A1A);
+        g.setColor(dark ? 0xD0D0D0 : 0x1A1A1A);
         g.setFont(pf);
         int by = dy + barH + 8;
         for (int i = 0; i < visibleCount; i++) {
