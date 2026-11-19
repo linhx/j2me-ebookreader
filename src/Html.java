@@ -177,6 +177,7 @@ public class Html {
         boolean inNoteRef = false;
         String currentNoteTarget = null;
         int noteRefStart = 0;
+        boolean inCaption = false;
 
         for (;;) {
             int ci = nextChar();
@@ -382,7 +383,10 @@ public class Html {
                         else if (name.length() == 2 && name.charAt(0) == 'h' && name.charAt(1) >= '3' && name.charAt(1) <= '6') { emit('\u0002'); marked = true; }
                         else if (name.equals("hr")) { emit('\u0003'); emit('\n'); }
                         else if (name.equals("li")) { emit('\u2022'); emit(' '); lineStart = false; }
-                        else if (isCaption(name, tagClass)) { emit('\u0006'); marked = true; }
+                        else if (isCaption(name, tagClass)) { emit('\u0006'); marked = true; inCaption = true; }
+                        else if (inCaption && name.equals("br")) { emit('\u0006'); marked = true; }
+                    } else if (inCaption && (name.equals("p") || name.equals("div") || name.equals("figcaption"))) {
+                        inCaption = false;
                     }
                 }
                 continue;
@@ -555,7 +559,10 @@ public class Html {
             || tagClass.indexOf("caption") >= 0
             || tagClass.indexOf("figcap") >= 0
             || tagClass.indexOf("chuthich") >= 0
-            || tagClass.indexOf("chu-thich") >= 0;
+            || tagClass.indexOf("chu-thich") >= 0
+            || tagClass.indexOf("img-desc") >= 0
+            || tagClass.indexOf("image-desc") >= 0
+            || tagClass.indexOf("photo") >= 0;
     }
 
     private static boolean isNameChar(char c) {
