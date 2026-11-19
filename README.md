@@ -72,3 +72,7 @@ java -Dfile.encoding=ISO_8859_1 -jar /mnt/data/apps/freej2me-plus/build/freej2me
 | `#` | Đổi giao diện (Sáng → Tối → Sepia) |
 | Phím mềm trái | Mở Menu (Mục lục, Đi tới %, Cỡ chữ, Giao diện, Danh sách sách…) |
 | Phím mềm phải | Mở Mục lục |
+
+## Khi duyệt Danh sách sách / Mục lục
+- **Tự động cuộn chữ (Marquee)**: Khi dừng con trỏ ở cuốn sách hoặc chương có tên dài, chữ sẽ tự động cuộn ngang từ từ để bạn đọc trọn vẹn tiêu đề.
+- **Phím `0`** (hoặc `*` / `#`): Mở hộp thoại popup xem toàn bộ tên sách/chương đầy đủ (tự xuống dòng). Bấm `OK` để mở sách ngay hoặc bấm phím bất kỳ để đóng.
