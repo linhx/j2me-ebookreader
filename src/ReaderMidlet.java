@@ -37,6 +37,7 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
     private static final int TAB_FAV = 0, TAB_ALL = 1;
     private int libraryTab = TAB_FAV;
     private boolean defaultTabPending = true;
+    private boolean resetTabFocus = false;
     private String curDir = null; // null => roots
     private String library = null; // chosen books folder
     private boolean chooseMode = false; // true while picking the books folder
@@ -432,6 +433,7 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
     public void showLibraryTab(int tab) {
         if (library == null) { showFolderPicker(); return; }
         chooseMode = false;
+        if (libraryTab != tab) resetTabFocus = true;
         libraryTab = tab;
         defaultTabPending = false;
         curDir = library;
@@ -558,12 +560,13 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
         }
         if (bg != browserGen) return;
         String keepName = null;
-        if (browser != null && !chooseMode && curDir != null) {
+        if (!resetTabFocus && browser != null && !chooseMode && curDir != null) {
             int curSel = browser.getSelected();
             if (curSel >= 0 && curSel < entries.size()) {
                 keepName = (String) entries.elementAt(curSel);
             }
         }
+        resetTabFocus = false;
         entries = new Vector();
         String title;
         if (curDir == null) title = L10n.t("Chọn ổ đĩa", "Select drive");
@@ -607,6 +610,9 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
             if (keepName != null) {
                 int newSel = entries.indexOf(keepName);
                 if (newSel >= 0) ls.setSelected(newSel);
+                else ls.setSelected(0);
+            } else {
+                ls.setSelected(0);
             }
         } else {
             for (int i = 0; i < n; i++) {
@@ -793,6 +799,7 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
 
     public void onTab(ListScreen s, int newTab) {
         if (s == browser && !chooseMode && curDir != null) {
+            resetTabFocus = true;
             libraryTab = newTab;
             defaultTabPending = false;
             showBrowser();
