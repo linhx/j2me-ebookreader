@@ -4,9 +4,15 @@
 
 ## Giao diện
 
-| Thư viện (Ưa thích) | Menu cài đặt | Đọc nền Sáng | Đọc nền Sepia | Đọc nền Tối |
+### Giao diện Tối (Opera Dark)
+| Thư viện (Ưa thích) | Menu cài đặt | Đọc nền Sáng (tách biệt) | Đọc nền Sepia | Đọc nền Tối |
 |:---:|:---:|:---:|:---:|:---:|
-| ![Thư viện](docs/library.png) | ![Menu](docs/menu.png) | ![Sáng](docs/reader-light.png) | ![Sepia](docs/reader-sepia.png) | ![Tối](docs/reader-dark.png) |
+| ![Thư viện Tối](docs/library-dark.png) | ![Menu Tối](docs/menu-dark.png) | ![Đọc Sáng](docs/reader-light.png) | ![Đọc Sepia](docs/reader-sepia.png) | ![Đọc Tối](docs/reader-dark.png) |
+
+### Giao diện Sáng (Opera Classic)
+| Thư viện Sáng | Menu Sáng | Đọc sách giao diện Sáng |
+|:---:|:---:|:---:|
+| ![Thư viện Sáng](docs/library-light.png) | ![Menu Sáng](docs/menu-light.png) | ![Đọc Sáng](docs/reader-light-ui.png) |
 
 ## Điểm nổi bật
 - **Phong cách Opera Mini 4.4:** Thanh tiêu đề và phím mềm chuyển màu (gradient), thanh cuộn mảnh, vạch tiến độ đọc tinh tế.

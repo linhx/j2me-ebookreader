@@ -69,20 +69,74 @@ public class CaptureShowcase {
         });
         Mobile.setDisplay(new Display());
 
-        // 1. Library screen
+        // 1. Dark UI (Opera Dark)
         Store.putInt("ui_theme", 1);
-        ListScreen lib = new ListScreen(null, "BookReader");
-        lib.setTabs(new String[]{"Ưa thích", "Tất cả sách"}, 0);
-        lib.add("Dế Mèn Phiêu Lưu Ký", Ui.I_STAR);
-        lib.add("Truyện Kiều - Nguyễn Du", Ui.I_STAR);
-        lib.add("Số Đỏ - Vũ Trọng Phụng", Ui.I_STAR);
-        lib.add("Tắt Đèn - Ngô Tất Tố", Ui.I_STAR);
-        lib.add("Chí Phèo - Nam Cao", Ui.I_STAR);
-        lib.setSelected(1);
-        lib.setSoftKeys("Menu", "Thoát");
-        dump(lib, new File(outDir, "library.png"));
+        ListScreen libDark = new ListScreen(null, "BookReader");
+        libDark.setTabs(new String[]{"Ưa thích", "Tất cả sách"}, 0);
+        libDark.add("Dế Mèn Phiêu Lưu Ký", Ui.I_STAR);
+        libDark.add("Truyện Kiều - Nguyễn Du", Ui.I_STAR);
+        libDark.add("Số Đỏ - Vũ Trọng Phụng", Ui.I_STAR);
+        libDark.add("Tắt Đèn - Ngô Tất Tố", Ui.I_STAR);
+        libDark.add("Chí Phèo - Nam Cao", Ui.I_STAR);
+        libDark.setSelected(1);
+        libDark.setSoftKeys("Menu", "Thoát");
+        dump(libDark, new File(outDir, "library-dark.png"));
+        dump(libDark, new File(outDir, "library.png"));
 
-        // 2. Reader screens (Light, Sepia, Dark)
+        ListScreen menuDark = new ListScreen(null, "Menu");
+        menuDark.add("Tiếp tục đọc", Ui.I_BOOK);
+        menuDark.add("☆ Thêm vào ưa thích", Ui.I_STAR);
+        menuDark.add("Mục lục", Ui.I_PAGE);
+        menuDark.add("Đi tới %", Ui.I_PAGE);
+        menuDark.add("Cỡ chữ: vừa", Ui.I_GEAR);
+        menuDark.add("Giao diện: tối", Ui.I_GEAR);
+        menuDark.add("Màu đọc: sáng", Ui.I_GEAR);
+        menuDark.add("Mục ưa thích", Ui.I_STAR);
+        menuDark.add("Tất cả sách", Ui.I_BOOK);
+        menuDark.add("Hướng dẫn phím", Ui.I_GEAR);
+        menuDark.add("Thoát", Ui.I_GEAR);
+        menuDark.setSelected(5);
+        menuDark.setSoftKeys("Chọn", "Quay lại");
+        dump(menuDark, new File(outDir, "menu-dark.png"));
+        dump(menuDark, new File(outDir, "menu.png"));
+
+        // 2. Light UI (Opera Classic)
+        Store.putInt("ui_theme", 0);
+        ListScreen libLight = new ListScreen(null, "BookReader");
+        libLight.setTabs(new String[]{"Ưa thích", "Tất cả sách"}, 0);
+        libLight.add("Dế Mèn Phiêu Lưu Ký", Ui.I_STAR);
+        libLight.add("Truyện Kiều - Nguyễn Du", Ui.I_STAR);
+        libLight.add("Số Đỏ - Vũ Trọng Phụng", Ui.I_STAR);
+        libLight.add("Tắt Đèn - Ngô Tất Tố", Ui.I_STAR);
+        libLight.add("Chí Phèo - Nam Cao", Ui.I_STAR);
+        libLight.setSelected(1);
+        libLight.setSoftKeys("Menu", "Thoát");
+        dump(libLight, new File(outDir, "library-light.png"));
+
+        ListScreen menuLight = new ListScreen(null, "Menu");
+        menuLight.add("Tiếp tục đọc", Ui.I_BOOK);
+        menuLight.add("☆ Thêm vào ưa thích", Ui.I_STAR);
+        menuLight.add("Mục lục", Ui.I_PAGE);
+        menuLight.add("Đi tới %", Ui.I_PAGE);
+        menuLight.add("Cỡ chữ: vừa", Ui.I_GEAR);
+        menuLight.add("Giao diện: sáng", Ui.I_GEAR);
+        menuLight.add("Màu đọc: sáng", Ui.I_GEAR);
+        menuLight.add("Mục ưa thích", Ui.I_STAR);
+        menuLight.add("Tất cả sách", Ui.I_BOOK);
+        menuLight.add("Hướng dẫn phím", Ui.I_GEAR);
+        menuLight.add("Thoát", Ui.I_GEAR);
+        menuLight.setSelected(5);
+        menuLight.setSoftKeys("Chọn", "Quay lại");
+        dump(menuLight, new File(outDir, "menu-light.png"));
+
+        ReaderCanvas rcLight = new ReaderCanvas(null);
+        rcLight.openBook("file:///E:/Books/truyen-kieu.epub", new SampleBook());
+        Thread.sleep(300);
+        rcLight.setTheme(0);
+        dump(rcLight, new File(outDir, "reader-light-ui.png"));
+
+        // 3. Reader paper themes (Light, Sepia, Dark) on Dark UI
+        Store.putInt("ui_theme", 1);
         ReaderCanvas rc = new ReaderCanvas(null);
         rc.openBook("file:///E:/Books/truyen-kieu.epub", new SampleBook());
         Thread.sleep(300);
@@ -92,23 +146,6 @@ public class CaptureShowcase {
         dump(rc, new File(outDir, "reader-sepia.png"));
         rc.setTheme(1);
         dump(rc, new File(outDir, "reader-dark.png"));
-
-        // 3. Menu screen
-        ListScreen menu = new ListScreen(null, "Menu");
-        menu.add("Tiếp tục đọc", Ui.I_BOOK);
-        menu.add("☆ Thêm vào ưa thích", Ui.I_STAR);
-        menu.add("Mục lục", Ui.I_PAGE);
-        menu.add("Đi tới %", Ui.I_PAGE);
-        menu.add("Cỡ chữ: vừa", Ui.I_GEAR);
-        menu.add("Giao diện: tối", Ui.I_GEAR);
-        menu.add("Màu đọc: sáng", Ui.I_GEAR);
-        menu.add("Mục ưa thích", Ui.I_STAR);
-        menu.add("Tất cả sách", Ui.I_BOOK);
-        menu.add("Hướng dẫn phím", Ui.I_GEAR);
-        menu.add("Thoát", Ui.I_GEAR);
-        menu.setSelected(5);
-        menu.setSoftKeys("Chọn", "Quay lại");
-        dump(menu, new File(outDir, "menu.png"));
 
         System.exit(0);
     }
