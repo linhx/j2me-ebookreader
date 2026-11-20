@@ -18,7 +18,7 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
     private Display display;
     private ReaderCanvas reader;
 
-    private final Command cBack = new Command("Quay lại", Command.BACK, 1);
+    private Command cBack = new Command(L10n.t("Quay lại", "Back"), Command.BACK, 1);
     private final Command cOk = new Command("OK", Command.OK, 1);
 
     private ListScreen menu, browser, toc;
@@ -85,7 +85,7 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
     // ------------------------------------------------------------ open
     private void openFile(final String url) {
         Store.putLong("t:" + url, System.currentTimeMillis());
-        showWait("Đang mở sách...");
+        showWait(L10n.t("Đang mở sách...", "Opening book..."));
         if (reader != null) reader.closeBook();
         toc = null;
         menu = null;
@@ -101,8 +101,8 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
                 } catch (Throwable e) {
                     System.gc();
                     String m = (e instanceof OutOfMemoryError)
-                            ? "Hết bộ nhớ khi mở sách."
-                            : ("Không mở được: " + e);
+                            ? L10n.t("Hết bộ nhớ khi mở sách.", "Out of memory while opening book.")
+                            : (L10n.t("Không mở được: ", "Cannot open: ") + e);
                     showBrowser();
                     showError(m);
                 }
@@ -114,27 +114,29 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
     public void showMenu() {
         reader.saveState();
         menu = new ListScreen(this, "Menu");
-        menu.add("Tiếp tục đọc", Ui.I_BOOK);
+        menu.add(L10n.t("Tiếp tục đọc", "Resume reading"), Ui.I_BOOK);
         String curUrl = reader.getUrl();
         boolean isFav = curUrl != null && Store.isFavorite(curUrl);
-        menu.add(isFav ? "★ Bỏ ưa thích sách này" : "☆ Thêm vào ưa thích", Ui.I_STAR);
-        menu.add("Mục lục", Ui.I_PAGE);
-        menu.add("Đi tới %", Ui.I_PAGE);
-        String[] fs = {"nhỏ", "vừa", "lớn"};
-        menu.add("Cỡ chữ: " + fs[reader.getFontSize()], Ui.I_GEAR);
-        String[] uiTh = {"sáng", "tối"};
+        menu.add(isFav ? L10n.t("★ Bỏ ưa thích sách này", "★ Remove from favorites")
+                       : L10n.t("☆ Thêm vào ưa thích", "☆ Add to favorites"), Ui.I_STAR);
+        menu.add(L10n.t("Mục lục", "Contents"), Ui.I_PAGE);
+        menu.add(L10n.t("Đi tới %", "Go to %"), Ui.I_PAGE);
+        String[] fs = L10n.fontSizes();
+        menu.add(L10n.t("Cỡ chữ: ", "Font size: ") + fs[reader.getFontSize()], Ui.I_GEAR);
+        String[] uiTh = L10n.uiThemes();
         int curUi = Store.getInt("ui_theme", 1);
         if (curUi < 0 || curUi >= uiTh.length) curUi = 1;
-        menu.add("Giao diện: " + uiTh[curUi], Ui.I_GEAR);
-        String[] readTh = {"sáng", "tối", "sepia"};
+        menu.add(L10n.t("Giao diện: ", "App theme: ") + uiTh[curUi], Ui.I_GEAR);
+        String[] readTh = L10n.readThemes();
         int rTh = reader.getTheme();
         if (rTh < 0 || rTh >= readTh.length) rTh = 0;
-        menu.add("Màu đọc: " + readTh[rTh], Ui.I_GEAR);
-        menu.add("Mục ưa thích", Ui.I_STAR);
-        menu.add("Tất cả sách", Ui.I_BOOK);
-        menu.add("Hướng dẫn phím", Ui.I_GEAR);
-        menu.add("Thoát", Ui.I_GEAR);
-        menu.setSoftKeys("Chọn", "Quay lại");
+        menu.add(L10n.t("Màu đọc: ", "Reading theme: ") + readTh[rTh], Ui.I_GEAR);
+        menu.add(L10n.t("Ngôn ngữ: ", "Language: ") + L10n.langName(), Ui.I_GEAR);
+        menu.add(L10n.t("Mục ưa thích", "Favorites tab"), Ui.I_STAR);
+        menu.add(L10n.t("Tất cả sách", "All books tab"), Ui.I_BOOK);
+        menu.add(L10n.t("Hướng dẫn phím", "Key shortcuts"), Ui.I_GEAR);
+        menu.add(L10n.t("Thoát", "Exit"), Ui.I_GEAR);
+        menu.setSoftKeys(L10n.t("Chọn", "Select"), L10n.t("Quay lại", "Back"));
         display.setCurrent(menu);
     }
 
@@ -142,16 +144,16 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
         Book b = reader.getBook();
         if (b == null) return;
         reader.saveState();
-        toc = new ListScreen(this, "Mục lục");
+        toc = new ListScreen(this, L10n.t("Mục lục", "Contents"));
         for (int i = 0; i < b.count(); i++) toc.add(b.titles[i], Ui.I_PAGE);
         toc.setSelected(reader.getChapter());
-        toc.setSoftKeys("Mở", "Quay lại");
+        toc.setSoftKeys(L10n.t("Mở", "Open"), L10n.t("Quay lại", "Back"));
         display.setCurrent(toc);
     }
 
     private void showGoto() {
-        gotoForm = new Form("Đi tới %");
-        gotoGauge = new Gauge("Vị trí (%)", true, 100, 0);
+        gotoForm = new Form(L10n.t("Đi tới %", "Go to %"));
+        gotoGauge = new Gauge(L10n.t("Vị trí (%)", "Position (%)"), true, 100, 0);
         gotoForm.append(gotoGauge);
         gotoForm.addCommand(cOk);
         gotoForm.addCommand(cBack);
@@ -160,30 +162,54 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
     }
 
     private void showHelp() {
-        Form f = new Form("Phím tắt");
-        f.append("Khi đọc sách:\n"
+        Form f = new Form(L10n.t("Phím tắt", "Key Shortcuts"));
+        String help = (L10n.getLang() == L10n.EN)
+                ? ("While reading:\n"
+                + "Up/Down (2/8): scroll line\n"
+                + "Left/Right (4/6), OK: prev/next page\n"
+                + "1 / 3: prev / next chapter\n"
+                + "7 / 9: prev / next footnote\n"
+                + "Hold * + Up/Down: font size\n"
+                + "#: reading theme (light / dark / sepia)\n\n"
+                + "In book list:\n"
+                + "Left/Right (4/6): Favorites / All books\n"
+                + "*: Toggle favorite book\n"
+                + "0: View full title\n"
+                + "Left softkey: Menu\n"
+                + "Right softkey: Exit / Back\n")
+                : ("Khi đọc sách:\n"
                 + "Lên/Xuống (2/8): cuộn dòng\n"
                 + "Trái/Phải (4/6), OK: lùi/tiến trang\n"
                 + "1 / 3: chương trước / sau\n"
+                + "7 / 9: chú thích trước / sau\n"
                 + "Giữ *, bấm Lên/Xuống: đổi cỡ chữ\n"
-                + "#: đổi màu đọc (sáng / tối / sepia)\n"
+                + "#: đổi màu đọc (sáng / tối / sepia)\n\n"
                 + "Trong danh sách sách:\n"
                 + "Trái/Phải (4/6): đổi Ưa thích / Tất cả\n"
                 + "*: Yêu thích / Bỏ yêu thích sách\n"
                 + "0: Xem tên sách đầy đủ\n"
                 + "Phím mềm trái: Menu\n"
                 + "Phím mềm phải: Thoát / Quay lại\n");
+        f.append(help);
         f.addCommand(cBack);
         f.setCommandListener(this);
         display.setCurrent(f);
     }
 
     private void showAbout() {
-        Form f = new Form("Giới thiệu");
-        f.append("BookReader v1.0\n"
+        Form f = new Form(L10n.t("Giới thiệu", "About"));
+        String about = (L10n.getLang() == L10n.EN)
+                ? ("BookReader v1.0\n"
+                + "EPUB/HTML/TXT reader for Nokia C2-01 & Java J2ME devices.\n\n"
+                + "Opera Mini 4.4 style.\n"
+                + "Decoupled App UI and Reading themes.\n"
+                + "Supports Favorites, text justify, footnotes and anti-OOM memory optimization.\n")
+                : ("BookReader v1.0\n"
                 + "Trình đọc sách EPUB/HTML/TXT cho Nokia C2-01 & thiết bị Java J2ME.\n\n"
                 + "Thiết kế theo phong cách Opera Mini 4.4.\n"
+                + "Tách biệt Giao diện ứng dụng và Màu đọc sách.\n"
                 + "Hỗ trợ mục Ưa thích, căn đều 2 lề, xem chú thích và nén RAM thông minh.\n");
+        f.append(about);
         f.addCommand(cBack);
         f.setCommandListener(this);
         display.setCurrent(f);
@@ -194,49 +220,52 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
         libMenuActions = new Vector();
 
         if (reader != null && reader.getBook() != null) {
-            libMenu.add("Tiếp tục đọc", Ui.I_BOOK);
+            libMenu.add(L10n.t("Tiếp tục đọc", "Resume reading"), Ui.I_BOOK);
             libMenuActions.addElement("resume");
         } else {
             String lastUrl = Store.get("last", "");
             if (lastUrl != null && lastUrl.length() > 0) {
                 int sl = lastUrl.lastIndexOf('/');
                 String n = sl >= 0 ? lastUrl.substring(sl + 1) : lastUrl;
-                libMenu.add("Đọc tiếp: " + stripExt(n), Ui.I_BOOK);
+                libMenu.add(L10n.t("Đọc tiếp: ", "Resume: ") + stripExt(n), Ui.I_BOOK);
                 libMenuActions.addElement("last");
             }
         }
 
-        libMenu.add("Đổi thư mục sách", Ui.I_FOLDER);
+        libMenu.add(L10n.t("Đổi thư mục sách", "Change folder"), Ui.I_FOLDER);
         libMenuActions.addElement("folder");
 
-        String[] uiTh = {"sáng", "tối"};
+        libMenu.add(L10n.t("Ngôn ngữ: ", "Language: ") + L10n.langName(), Ui.I_GEAR);
+        libMenuActions.addElement("lang");
+
+        String[] uiTh = L10n.uiThemes();
         int curUi = Store.getInt("ui_theme", 1);
         if (curUi < 0 || curUi >= uiTh.length) curUi = 1;
-        libMenu.add("Giao diện: " + uiTh[curUi], Ui.I_GEAR);
+        libMenu.add(L10n.t("Giao diện: ", "App theme: ") + uiTh[curUi], Ui.I_GEAR);
         libMenuActions.addElement("ui_theme");
 
-        String[] readTh = {"sáng", "tối", "sepia"};
+        String[] readTh = L10n.readThemes();
         int curTheme = Store.getInt("theme", 0);
         if (curTheme < 0 || curTheme >= readTh.length) curTheme = 0;
-        libMenu.add("Màu đọc: " + readTh[curTheme], Ui.I_GEAR);
+        libMenu.add(L10n.t("Màu đọc: ", "Reading theme: ") + readTh[curTheme], Ui.I_GEAR);
         libMenuActions.addElement("theme");
 
-        String[] fs = {"nhỏ", "vừa", "lớn"};
+        String[] fs = L10n.fontSizes();
         int curFont = Store.getInt("font", 1);
         if (curFont < 0 || curFont >= fs.length) curFont = 1;
-        libMenu.add("Cỡ chữ: " + fs[curFont], Ui.I_GEAR);
+        libMenu.add(L10n.t("Cỡ chữ: ", "Font size: ") + fs[curFont], Ui.I_GEAR);
         libMenuActions.addElement("font");
 
-        libMenu.add("Hướng dẫn phím", Ui.I_GEAR);
+        libMenu.add(L10n.t("Hướng dẫn phím", "Key shortcuts"), Ui.I_GEAR);
         libMenuActions.addElement("help");
 
-        libMenu.add("Giới thiệu", Ui.I_BOOK);
+        libMenu.add(L10n.t("Giới thiệu", "About"), Ui.I_BOOK);
         libMenuActions.addElement("about");
 
-        libMenu.add("Thoát", Ui.I_GEAR);
+        libMenu.add(L10n.t("Thoát", "Exit"), Ui.I_GEAR);
         libMenuActions.addElement("quit");
 
-        libMenu.setSoftKeys("Chọn", "Quay lại");
+        libMenu.setSoftKeys(L10n.t("Chọn", "Select"), L10n.t("Quay lại", "Back"));
         display.setCurrent(libMenu);
     }
 
@@ -250,6 +279,11 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
             if (lastUrl != null && lastUrl.length() > 0) openFile(lastUrl);
         } else if ("folder".equals(action)) {
             showFolderPicker();
+        } else if ("lang".equals(action)) {
+            L10n.toggleLang();
+            cBack = new Command(L10n.t("Quay lại", "Back"), Command.BACK, 1);
+            showLibraryMenu();
+            libMenu.setSelected(idx);
         } else if ("ui_theme".equals(action)) {
             int curUi = Store.getInt("ui_theme", 1);
             int nextUi = (curUi + 1) % 2;
@@ -312,7 +346,7 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
 
     private void showBrowser() {
         if (reader != null) reader.saveState();
-        showWait("Đang đọc thư mục...");
+        showWait(L10n.t("Đang đọc thư mục...", "Reading folder..."));
         final int bg = ++browserGen;
         new Thread(new Runnable() {
             public void run() {
@@ -323,7 +357,7 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
                     curDir = null;
                     chooseMode = true;
                     try { listDir(bg); } catch (Throwable e2) { }
-                    showError("Không đọc được thư mục: " + e);
+                    showError(L10n.t("Không đọc được thư mục: ", "Cannot read folder: ") + e);
                 }
             }
         }).start();
@@ -431,12 +465,12 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
         }
         entries = new Vector();
         String title;
-        if (curDir == null) title = "Chọn ổ đĩa";
+        if (curDir == null) title = L10n.t("Chọn ổ đĩa", "Select drive");
         else if (chooseMode) title = shortPath(curDir);
-        else title = "Thư viện";
+        else title = L10n.t("Thư viện", "Library");
         ListScreen ls = new ListScreen(this, title);
         hasUpItem = chooseMode && curDir != null;
-        if (hasUpItem) ls.add(".. (thư mục cha)", Ui.I_UP);
+        if (hasUpItem) ls.add(L10n.t(".. (thư mục cha)", ".. (parent folder)"), Ui.I_UP);
 
         if (!chooseMode && curDir != null) {
             java.util.Hashtable favMap = Store.getAllWithPrefix("fav:");
@@ -462,13 +496,13 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
             }
 
             if (libraryTab == TAB_FAV && added == 0) {
-                ls.add("(Chưa có sách ưa thích. Nhấn * để thêm)", Ui.I_NONE);
+                ls.add(L10n.t("(Chưa có sách ưa thích. Nhấn * để thêm)", "(No favorites yet. Press * to add)"), Ui.I_NONE);
             } else if (libraryTab == TAB_ALL && added == 0) {
-                ls.add("(Không có sách. Bấm \"Menu\" -> Đổi thư mục)", Ui.I_NONE);
+                ls.add(L10n.t("(Không có sách. Bấm \"Menu\" -> Đổi thư mục)", "(No books found. Press \"Menu\" -> Change folder)"), Ui.I_NONE);
             }
 
-            ls.setTabs(new String[] {"★ Ưa thích (" + favCount + ")", "Tất cả (" + n + ")"}, libraryTab);
-            ls.setSoftKeys("Menu", (reader != null && reader.getBook() != null) ? "Quay lại" : "Thoát");
+            ls.setTabs(new String[] {"★ " + L10n.t("Ưa thích", "Favorites") + " (" + favCount + ")", L10n.t("Tất cả", "All") + " (" + n + ")"}, libraryTab);
+            ls.setSoftKeys(L10n.t("Menu", "Menu"), (reader != null && reader.getBook() != null) ? L10n.t("Quay lại", "Back") : L10n.t("Thoát", "Exit"));
             if (keepName != null) {
                 int newSel = entries.indexOf(keepName);
                 if (newSel >= 0) ls.setSelected(newSel);
@@ -491,7 +525,7 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
                 ls.add(label, icon);
             }
             if (chooseMode) {
-                ls.setSoftKeys(curDir != null ? "Chọn" : "", library != null ? "Hủy" : "Thoát");
+                ls.setSoftKeys(curDir != null ? L10n.t("Chọn", "Select") : "", library != null ? L10n.t("Hủy", "Cancel") : L10n.t("Thoát", "Exit"));
                 if (hasUpItem && n > 0) ls.setSelected(1);
             }
         }
@@ -714,10 +748,16 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
                     showMenu();
                     menu.setSelected(6);
                     break;
-                case 7: showLibraryTab(TAB_FAV); break;
-                case 8: showLibraryTab(TAB_ALL); break;
-                case 9: backScreen = menu; showHelp(); break;
-                case 10: quit(); break;
+                case 7:
+                    L10n.toggleLang();
+                    cBack = new Command(L10n.t("Quay lại", "Back"), Command.BACK, 1);
+                    showMenu();
+                    menu.setSelected(7);
+                    break;
+                case 8: showLibraryTab(TAB_FAV); break;
+                case 9: showLibraryTab(TAB_ALL); break;
+                case 10: backScreen = menu; showHelp(); break;
+                case 11: quit(); break;
                 default: break;
             }
         } else if (s == toc) {

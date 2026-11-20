@@ -205,11 +205,11 @@ public class ListScreen extends Canvas {
             g.setFont(font);
             g.setColor(dark ? 0x888888 : 0x707070);
             if (tabs != null && tabs.length > 1) {
-                g.drawString("*: Thích | 0: Tên", w / 2, h - bh + (bh - font.getHeight()) / 2 + 1, Graphics.TOP | Graphics.HCENTER);
+                g.drawString(L10n.t("*: Thích | 0: Tên", "*: Fav | 0: Name"), w / 2, h - bh + (bh - font.getHeight()) / 2 + 1, Graphics.TOP | Graphics.HCENTER);
             } else {
                 String selText = (String) labels.elementAt(sel);
                 if (bold.stringWidth(selText) > w - 36) {
-                    g.drawString("0: Xem tên", w / 2, h - bh + (bh - font.getHeight()) / 2 + 1, Graphics.TOP | Graphics.HCENTER);
+                    g.drawString(L10n.t("0: Xem tên", "0: Full name"), w / 2, h - bh + (bh - font.getHeight()) / 2 + 1, Graphics.TOP | Graphics.HCENTER);
                 }
             }
         }
@@ -267,7 +267,7 @@ public class ListScreen extends Canvas {
         }
         g.setColor(0xFFFFFF);
         g.setFont(hf);
-        g.drawString("Tên đầy đủ", dx + 8, dy + 3, Graphics.TOP | Graphics.LEFT);
+        g.drawString(L10n.t("Tên đầy đủ", "Full Name"), dx + 8, dy + 3, Graphics.TOP | Graphics.LEFT);
 
         // Body lines
         g.setColor(dark ? 0xD0D0D0 : 0x1A1A1A);
@@ -284,7 +284,7 @@ public class ListScreen extends Canvas {
         g.drawLine(dx + 2, fy, dx + dw - 2, fy);
         g.setFont(font);
         g.setColor(dark ? 0x909090 : 0x707070);
-        g.drawString("OK: Mở | *: Thích | Khác: Đóng", dx + dw / 2, fy + 4, Graphics.TOP | Graphics.HCENTER);
+        g.drawString(L10n.t("OK: Mở | *: Thích | Khác: Đóng", "OK: Open | *: Fav | Other: Close"), dx + dw / 2, fy + 4, Graphics.TOP | Graphics.HCENTER);
     }
 
     private Vector wrapText(String str, int maxW, Font f) {

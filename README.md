@@ -10,6 +10,7 @@
 | **Sáng** | ![Thư viện Sáng](docs/library-light.png) | ![Menu Sáng](docs/menu-light.png) | ![Đọc Sáng](docs/reader-light-ui-light.png) | ![Đọc Sepia](docs/reader-light-ui-sepia.png) | ![Đọc Tối](docs/reader-light-ui-dark.png) |
 
 ## Điểm nổi bật
+- **Đa ngôn ngữ (Tiếng Việt / English):** Tự động nhận diện ngôn ngữ máy (`microedition.locale`) hoặc chuyển đổi tức thì trong Menu cài đặt, tự động lưu cấu hình.
 - **Phong cách Opera Mini 4.4:** Thanh tiêu đề và phím mềm chuyển màu (gradient), thanh cuộn mảnh, vạch tiến độ đọc tinh tế.
 - **Tách biệt Giao diện & Màu đọc:** Tùy chọn độc lập giữa giao diện ứng dụng (`sáng` / `tối`) và màu trang giấy đọc (`sáng` / `tối` / `sepia`). Cho phép đọc chữ nền sáng trên giao diện tối.
 - **Quản lý Thư viện:** Chia 2 tab *Ưa thích* và *Tất cả sách* (phím `*` để thêm/bỏ yêu thích, tự nhớ thư mục sách, menu cài đặt gọn gàng).

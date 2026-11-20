@@ -27,7 +27,7 @@ public class ReaderCanvas extends Canvas {
     private int fontSize, theme;
     private int lineH, linesPerPage, margin = 7, footerH, textW, availH;
     private volatile boolean busy = true;
-    private String busyMsg = "Đang tải...";
+    private String busyMsg = L10n.t("Đang tải...", "Loading...");
     private int gen = 0;
     private boolean starHeld = false, starUsed = false;
     private volatile int heldKey = 0, heldGen = 0;
@@ -141,7 +141,7 @@ public class ReaderCanvas extends Canvas {
     private void load(final int ch, final int initPartOff, final int mode, final int off) {
         saveState();
         busy = true;
-        busyMsg = "Đang tải...";
+        busyMsg = L10n.t("Đang tải...", "Loading...");
         final int g = ++gen;
         repaint();
         new Thread(new Runnable() {
@@ -222,8 +222,8 @@ public class ReaderCanvas extends Canvas {
     }
 
     private static String errText(Throwable e) {
-        if (e instanceof OutOfMemoryError) return "Hết bộ nhớ. Chương này quá lớn cho máy.";
-        return "Lỗi đọc: " + e;
+        if (e instanceof OutOfMemoryError) return L10n.t("Hết bộ nhớ. Chương này quá lớn cho máy.", "Out of memory. Chapter is too large.");
+        return L10n.t("Lỗi đọc: ", "Read error: ") + e;
     }
 
     private int lh(int i) { return meta[i] & 0x1FF; }
@@ -389,7 +389,7 @@ public class ReaderCanvas extends Canvas {
         int c1 = uiDark ? 0x282828 : 0xF0F0F0;
         int c2 = uiDark ? 0x161616 : 0xB4B4B4;
         if (busy) {
-            Ui.softBar(g, fy, w, footerH, "Menu", "Mục lục", c1, c2, uiDark ? 0xD0D0D0 : 0x202020);
+            Ui.softBar(g, fy, w, footerH, L10n.t("Menu", "Menu"), L10n.t("Mục lục", "TOC"), c1, c2, uiDark ? 0xD0D0D0 : 0x202020);
             Ui.loadingBox(g, w, h, busyMsg, uiDark);
             return;
         }
@@ -427,7 +427,7 @@ public class ReaderCanvas extends Canvas {
         int trackCol = paperDark ? 0x1A1A1A : (theme == 2 ? 0xE8DFC2 : 0xEAEAEA);
         int thumbCol = paperDark ? 0x484848 : t[2];
         Ui.scrollbar(g, w - 3, 2, fy - 4, nLines, top, cnt, trackCol, thumbCol);
-        Ui.softBar(g, fy, w, footerH, "Menu", "Mục lục", c1, c2, uiDark ? 0xD0D0D0 : 0x202020);
+        Ui.softBar(g, fy, w, footerH, L10n.t("Menu", "Menu"), L10n.t("Mục lục", "TOC"), c1, c2, uiDark ? 0xD0D0D0 : 0x202020);
         g.setColor(uiDark ? 0x363636 : 0x808080);
         g.drawLine(0, fy, w, fy);
         g.setColor(uiDark ? Ui.RED1 : t[3]);
@@ -435,10 +435,10 @@ public class ReaderCanvas extends Canvas {
         g.setFont(small);
         int fty = fy + (footerH - small.getHeight()) / 2;
         if (selectedNote >= 0 && notes != null && selectedNote < notes.length) {
-            String noteHint = "OK: Đọc [" + notes[selectedNote].label + "]";
+            String noteHint = L10n.t("OK: Đọc [", "OK: Read [") + notes[selectedNote].label + "]";
             int maxMidW = w - 110;
             if (small.stringWidth(noteHint) > maxMidW) {
-                noteHint = "OK: Đọc";
+                noteHint = L10n.t("OK: Đọc", "OK: Read");
             }
             int nhw = small.stringWidth(noteHint) + 12;
             int nhx = (w - nhw) / 2;
@@ -487,7 +487,7 @@ public class ReaderCanvas extends Canvas {
                 int sl = full.lastIndexOf('/');
                 alt = sl >= 0 ? full.substring(sl + 1) : full;
             }
-            String label = "[Ảnh: " + alt + " (quá lớn)]";
+            String label = "[" + L10n.t("Ảnh: ", "Image: ") + alt + " (" + L10n.t("quá lớn", "too large") + ")]";
             while (label.length() > 6 && fItalic.stringWidth(label) > textW - 20) {
                 label = label.substring(0, label.length() - 5) + "...]";
             }
@@ -772,8 +772,8 @@ public class ReaderCanvas extends Canvas {
             starUsed = true;
             int ns = Math.max(0, Math.min(2, fontSize + (a == UP ? 1 : -1)));
             if (ns != fontSize) setFontSize(ns);
-            String[] nm = {"nhỏ", "vừa", "lớn"};
-            showToast("Cỡ chữ: " + nm[fontSize]);
+            String[] nm = L10n.fontSizes();
+            showToast(L10n.t("Cỡ chữ: ", "Font size: ") + nm[fontSize]);
             return;
         }
         if (code == KEY_POUND) { setTheme((theme + 1) % THEMES.length); return; }
@@ -798,7 +798,7 @@ public class ReaderCanvas extends Canvas {
 
     private void navNote(int dir) {
         if (notes == null || notes.length == 0 || nLines == 0) {
-            showToast("Trang này không có chú thích");
+            showToast(L10n.t("Trang này không có chú thích", "No footnotes on this page"));
             return;
         }
         int cnt = fits(top);
@@ -816,7 +816,7 @@ public class ReaderCanvas extends Canvas {
         }
 
         if (count == 0) {
-            showToast("Trang này không có chú thích");
+            showToast(L10n.t("Trang này không có chú thích", "No footnotes on this page"));
             return;
         }
 
@@ -829,7 +829,7 @@ public class ReaderCanvas extends Canvas {
         }
 
         Book.Note n = notes[selectedNote];
-        showToast("Chú thích [" + n.label + "] - Bấm OK để đọc");
+        showToast(L10n.t("Chú thích [", "Footnote [") + n.label + L10n.t("] - Bấm OK để đọc", "] - Press OK to read"));
         repaint();
     }
 
@@ -874,7 +874,7 @@ public class ReaderCanvas extends Canvas {
         g.setColor(0xFFFFFF);
         Font fHeader = (fontSize == 2) ? fSub : Font.getFont(Font.FACE_PROPORTIONAL, Font.STYLE_BOLD, Font.SIZE_SMALL);
         g.setFont(fHeader);
-        g.drawString("Chú thích [" + activeNote.label + "]", dx + 8, dy + (barH - fHeader.getHeight()) / 2, Graphics.TOP | Graphics.LEFT);
+        g.drawString(L10n.t("Chú thích [", "Footnote [") + activeNote.label + "]", dx + 8, dy + (barH - fHeader.getHeight()) / 2, Graphics.TOP | Graphics.LEFT);
 
         // Body text
         g.setFont(bf);
@@ -908,7 +908,7 @@ public class ReaderCanvas extends Canvas {
         g.drawLine(dx + 2, fy, dx + dw - 2, fy);
         g.setFont(small);
         g.setColor(uiDark ? 0x909090 : 0x707070);
-        String footerText = maxScroll > 0 ? "2/8: Cuộn  |  OK: Đóng" : "Bấm OK để đóng";
+        String footerText = maxScroll > 0 ? L10n.t("2/8: Cuộn  |  OK: Đóng", "2/8: Scroll  |  OK: Close") : L10n.t("Bấm OK để đóng", "Press OK to close");
         g.drawString(footerText, dx + dw / 2, fy + (footH - small.getHeight()) / 2, Graphics.TOP | Graphics.HCENTER);
     }
 
@@ -942,7 +942,7 @@ public class ReaderCanvas extends Canvas {
     private java.util.Vector wrapNoteBody(String text, int maxW, Font f) {
         java.util.Vector lines = new java.util.Vector();
         if (text == null || text.length() == 0) {
-            lines.addElement("(Không có nội dung)");
+            lines.addElement(L10n.t("(Không có nội dung)", "(No content)"));
             return lines;
         }
         int len = text.length();
@@ -1044,7 +1044,7 @@ public class ReaderCanvas extends Canvas {
     private void loadFraction(final int ch, final double frac) {
         saveState();
         busy = true;
-        busyMsg = "Đang tải...";
+        busyMsg = L10n.t("Đang tải...", "Loading...");
         final int g = ++gen;
         repaint();
         new Thread(new Runnable() {
@@ -1113,8 +1113,8 @@ public class ReaderCanvas extends Canvas {
     public void setTheme(int t) {
         theme = Math.max(0, Math.min(THEMES.length - 1, t));
         Store.putInt("theme", theme);
-        String[] nm = {"sáng", "tối", "sepia"};
-        showToast("Màu đọc: " + nm[theme]);
+        String[] nm = L10n.readThemes();
+        showToast(L10n.t("Màu đọc: ", "Reading theme: ") + nm[theme]);
         repaint();
     }
 

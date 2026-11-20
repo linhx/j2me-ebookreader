@@ -85,7 +85,7 @@ public abstract class Book {
             int n = (int) ((size + CH - 1) / CH);
             if (n < 1) n = 1;
             titles = new String[n];
-            for (int i = 0; i < n; i++) titles[i] = n == 1 ? "Nội dung" : "Phần " + (i + 1);
+            for (int i = 0; i < n; i++) titles[i] = n == 1 ? L10n.t("Nội dung", "Content") : (L10n.t("Phần ", "Part ") + (i + 1));
             byte[] head = window(0, 2048);
             utf8 = Util.isUtf8(head, 0, head.length);
         }
@@ -252,7 +252,7 @@ public abstract class Book {
             }
             for (int i = 0; i < files.length; i++) {
                 String t = (String) toc.get(files[i]);
-                titles[i] = (t != null && t.length() > 0) ? t : "Phần " + (i + 1);
+                titles[i] = (t != null && t.length() > 0) ? t : (L10n.t("Phần ", "Part ") + (i + 1));
             }
             toc.clear();
         }
