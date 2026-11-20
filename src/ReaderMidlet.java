@@ -6,6 +6,7 @@ import javax.microedition.io.file.FileConnection;
 import javax.microedition.io.file.FileSystemRegistry;
 import javax.microedition.lcdui.Alert;
 import javax.microedition.lcdui.AlertType;
+import javax.microedition.lcdui.Canvas;
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.CommandListener;
 import javax.microedition.lcdui.Display;
@@ -22,8 +23,12 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
     private final Command cOk = new Command("OK", Command.OK, 1);
 
     private ListScreen menu, browser, toc;
+    private Vector menuActions = new Vector();
     private ListScreen libMenu;
     private Vector libMenuActions = new Vector();
+    private ListScreen settingsScreen;
+    private Vector settingsActions = new Vector();
+    private Displayable settingsBack = null;
     private Displayable backScreen = null;
     private Form gotoForm;
     private Gauge gotoGauge;
@@ -114,30 +119,77 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
     public void showMenu() {
         reader.saveState();
         menu = new ListScreen(this, "Menu");
+        menuActions = new Vector();
+
         menu.add(L10n.t("Tiếp tục đọc", "Resume reading"), Ui.I_BOOK);
+        menuActions.addElement("resume");
+
+        menu.add(L10n.t("Mục lục", "Contents"), Ui.I_PAGE);
+        menuActions.addElement("toc");
+
+        menu.add(L10n.t("Đi tới %", "Go to %"), Ui.I_PAGE);
+        menuActions.addElement("goto");
+
         String curUrl = reader.getUrl();
         boolean isFav = curUrl != null && Store.isFavorite(curUrl);
-        menu.add(isFav ? L10n.t("★ Bỏ ưa thích sách này", "★ Remove from favorites")
+        menu.add(isFav ? L10n.t("★ Bỏ ưa thích", "★ Remove favorite")
                        : L10n.t("☆ Thêm vào ưa thích", "☆ Add to favorites"), Ui.I_STAR);
-        menu.add(L10n.t("Mục lục", "Contents"), Ui.I_PAGE);
-        menu.add(L10n.t("Đi tới %", "Go to %"), Ui.I_PAGE);
-        String[] fs = L10n.fontSizes();
-        menu.add(L10n.t("Cỡ chữ: ", "Font size: ") + fs[reader.getFontSize()], Ui.I_GEAR);
-        String[] uiTh = L10n.uiThemes();
-        int curUi = Store.getInt("ui_theme", 1);
-        if (curUi < 0 || curUi >= uiTh.length) curUi = 1;
-        menu.add(L10n.t("Giao diện: ", "App theme: ") + uiTh[curUi], Ui.I_GEAR);
-        String[] readTh = L10n.readThemes();
-        int rTh = reader.getTheme();
-        if (rTh < 0 || rTh >= readTh.length) rTh = 0;
-        menu.add(L10n.t("Màu đọc: ", "Reading theme: ") + readTh[rTh], Ui.I_GEAR);
-        menu.add(L10n.t("Ngôn ngữ: ", "Language: ") + L10n.langName(), Ui.I_GEAR);
+        menuActions.addElement("fav");
+
         menu.add(L10n.t("Mục ưa thích", "Favorites tab"), Ui.I_STAR);
+        menuActions.addElement("tab_fav");
+
         menu.add(L10n.t("Tất cả sách", "All books tab"), Ui.I_BOOK);
-        menu.add(L10n.t("Hướng dẫn phím", "Key shortcuts"), Ui.I_GEAR);
+        menuActions.addElement("tab_all");
+
+        menu.add(L10n.t("Cài đặt", "Settings"), Ui.I_GEAR);
+        menuActions.addElement("settings");
+
+        menu.add(L10n.t("Hướng dẫn phím", "Key shortcuts"), Ui.I_PAGE);
+        menuActions.addElement("help");
+
+        menu.add(L10n.t("Giới thiệu", "About"), Ui.I_BOOK);
+        menuActions.addElement("about");
+
         menu.add(L10n.t("Thoát", "Exit"), Ui.I_GEAR);
+        menuActions.addElement("quit");
+
         menu.setSoftKeys(L10n.t("Chọn", "Select"), L10n.t("Quay lại", "Back"));
         display.setCurrent(menu);
+    }
+
+    private void handleMenuSelect(int idx) {
+        if (idx < 0 || idx >= menuActions.size()) return;
+        String action = (String) menuActions.elementAt(idx);
+        if ("resume".equals(action)) {
+            display.setCurrent(reader);
+        } else if ("toc".equals(action)) {
+            showToc();
+        } else if ("goto".equals(action)) {
+            showGoto();
+        } else if ("fav".equals(action)) {
+            String curUrl = reader.getUrl();
+            if (curUrl != null) {
+                boolean isFav = Store.isFavorite(curUrl);
+                Store.setFavorite(curUrl, !isFav);
+                showMenu();
+                menu.setSelected(idx);
+            }
+        } else if ("tab_fav".equals(action)) {
+            showLibraryTab(TAB_FAV);
+        } else if ("tab_all".equals(action)) {
+            showLibraryTab(TAB_ALL);
+        } else if ("settings".equals(action)) {
+            showSettings(menu);
+        } else if ("help".equals(action)) {
+            backScreen = menu;
+            showHelp();
+        } else if ("about".equals(action)) {
+            backScreen = menu;
+            showAbout();
+        } else if ("quit".equals(action)) {
+            quit();
+        }
     }
 
     public void showToc() {
@@ -232,31 +284,10 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
             }
         }
 
-        libMenu.add(L10n.t("Đổi thư mục sách", "Change folder"), Ui.I_FOLDER);
-        libMenuActions.addElement("folder");
+        libMenu.add(L10n.t("Cài đặt", "Settings"), Ui.I_GEAR);
+        libMenuActions.addElement("settings");
 
-        libMenu.add(L10n.t("Ngôn ngữ: ", "Language: ") + L10n.langName(), Ui.I_GEAR);
-        libMenuActions.addElement("lang");
-
-        String[] uiTh = L10n.uiThemes();
-        int curUi = Store.getInt("ui_theme", 1);
-        if (curUi < 0 || curUi >= uiTh.length) curUi = 1;
-        libMenu.add(L10n.t("Giao diện: ", "App theme: ") + uiTh[curUi], Ui.I_GEAR);
-        libMenuActions.addElement("ui_theme");
-
-        String[] readTh = L10n.readThemes();
-        int curTheme = Store.getInt("theme", 0);
-        if (curTheme < 0 || curTheme >= readTh.length) curTheme = 0;
-        libMenu.add(L10n.t("Màu đọc: ", "Reading theme: ") + readTh[curTheme], Ui.I_GEAR);
-        libMenuActions.addElement("theme");
-
-        String[] fs = L10n.fontSizes();
-        int curFont = Store.getInt("font", 1);
-        if (curFont < 0 || curFont >= fs.length) curFont = 1;
-        libMenu.add(L10n.t("Cỡ chữ: ", "Font size: ") + fs[curFont], Ui.I_GEAR);
-        libMenuActions.addElement("font");
-
-        libMenu.add(L10n.t("Hướng dẫn phím", "Key shortcuts"), Ui.I_GEAR);
+        libMenu.add(L10n.t("Hướng dẫn phím", "Key shortcuts"), Ui.I_PAGE);
         libMenuActions.addElement("help");
 
         libMenu.add(L10n.t("Giới thiệu", "About"), Ui.I_BOOK);
@@ -277,34 +308,8 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
         } else if ("last".equals(action)) {
             String lastUrl = Store.get("last", "");
             if (lastUrl != null && lastUrl.length() > 0) openFile(lastUrl);
-        } else if ("folder".equals(action)) {
-            showFolderPicker();
-        } else if ("lang".equals(action)) {
-            L10n.toggleLang();
-            cBack = new Command(L10n.t("Quay lại", "Back"), Command.BACK, 1);
-            showLibraryMenu();
-            libMenu.setSelected(idx);
-        } else if ("ui_theme".equals(action)) {
-            int curUi = Store.getInt("ui_theme", 1);
-            int nextUi = (curUi + 1) % 2;
-            Store.putInt("ui_theme", nextUi);
-            if (reader != null) reader.repaint();
-            showLibraryMenu();
-            libMenu.setSelected(idx);
-        } else if ("theme".equals(action)) {
-            int curTheme = Store.getInt("theme", 0);
-            int nextTheme = (curTheme + 1) % 3;
-            Store.putInt("theme", nextTheme);
-            if (reader != null) reader.setTheme(nextTheme);
-            showLibraryMenu();
-            libMenu.setSelected(idx);
-        } else if ("font".equals(action)) {
-            int curFont = Store.getInt("font", 1);
-            int nextFont = (curFont + 1) % 3;
-            Store.putInt("font", nextFont);
-            if (reader != null) reader.setFontSize(nextFont);
-            showLibraryMenu();
-            libMenu.setSelected(idx);
+        } else if ("settings".equals(action)) {
+            showSettings(libMenu);
         } else if ("help".equals(action)) {
             backScreen = libMenu;
             showHelp();
@@ -313,6 +318,76 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
             showAbout();
         } else if ("quit".equals(action)) {
             quit();
+        }
+    }
+
+    // ------------------------------------------------------------ settings
+    public void showSettings(Displayable back) {
+        if (back != null && back != settingsScreen) {
+            settingsBack = back;
+        }
+        settingsScreen = new ListScreen(this, L10n.t("Cài đặt", "Settings"));
+        settingsActions = new Vector();
+
+        String[] uiTh = L10n.uiThemes();
+        int curUi = Store.getInt("ui_theme", 1);
+        if (curUi < 0 || curUi >= uiTh.length) curUi = 1;
+        settingsScreen.add(L10n.t("Giao diện: ", "App theme: ") + uiTh[curUi], Ui.I_GEAR);
+        settingsActions.addElement("ui_theme");
+
+        String[] readTh = L10n.readThemes();
+        int curTheme = (reader != null) ? reader.getTheme() : Store.getInt("theme", 0);
+        if (curTheme < 0 || curTheme >= readTh.length) curTheme = 0;
+        settingsScreen.add(L10n.t("Màu đọc: ", "Reading theme: ") + readTh[curTheme], Ui.I_GEAR);
+        settingsActions.addElement("theme");
+
+        String[] fs = L10n.fontSizes();
+        int curFont = (reader != null) ? reader.getFontSize() : Store.getInt("font", 1);
+        if (curFont < 0 || curFont >= fs.length) curFont = 1;
+        settingsScreen.add(L10n.t("Cỡ chữ: ", "Font size: ") + fs[curFont], Ui.I_GEAR);
+        settingsActions.addElement("font");
+
+        settingsScreen.add(L10n.t("Ngôn ngữ: ", "Language: ") + L10n.langName(), Ui.I_GEAR);
+        settingsActions.addElement("lang");
+
+        settingsScreen.add(L10n.t("Đổi thư mục sách", "Change folder"), Ui.I_FOLDER);
+        settingsActions.addElement("folder");
+
+        settingsScreen.setSoftKeys(L10n.t("Chọn", "Select"), L10n.t("Quay lại", "Back"));
+        display.setCurrent(settingsScreen);
+    }
+
+    private void handleSettingsSelect(int idx) {
+        if (idx < 0 || idx >= settingsActions.size()) return;
+        String action = (String) settingsActions.elementAt(idx);
+        if ("ui_theme".equals(action)) {
+            int curUi = Store.getInt("ui_theme", 1);
+            int nextUi = (curUi + 1) % 2;
+            Store.putInt("ui_theme", nextUi);
+            if (reader != null) reader.repaint();
+            showSettings(settingsBack);
+            settingsScreen.setSelected(idx);
+        } else if ("theme".equals(action)) {
+            int curTheme = (reader != null) ? reader.getTheme() : Store.getInt("theme", 0);
+            int nextTheme = (curTheme + 1) % 3;
+            Store.putInt("theme", nextTheme);
+            if (reader != null) reader.setTheme(nextTheme);
+            showSettings(settingsBack);
+            settingsScreen.setSelected(idx);
+        } else if ("font".equals(action)) {
+            int curFont = (reader != null) ? reader.getFontSize() : Store.getInt("font", 1);
+            int nextFont = (curFont + 1) % 3;
+            Store.putInt("font", nextFont);
+            if (reader != null) reader.setFontSize(nextFont);
+            showSettings(settingsBack);
+            settingsScreen.setSelected(idx);
+        } else if ("lang".equals(action)) {
+            L10n.toggleLang();
+            cBack = new Command(L10n.t("Quay lại", "Back"), Command.BACK, 1);
+            showSettings(settingsBack);
+            settingsScreen.setSelected(idx);
+        } else if ("folder".equals(action)) {
+            showFolderPicker();
         }
     }
 
@@ -672,6 +747,21 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
             } else {
                 handleLibMenuSelect(s.getSelected());
             }
+        } else if (s == settingsScreen) {
+            if (!leftKey) {
+                if (settingsBack == menu) {
+                    showMenu();
+                } else if (settingsBack == libMenu) {
+                    showLibraryMenu();
+                } else if (settingsBack != null) {
+                    display.setCurrent(settingsBack);
+                    if (settingsBack instanceof Canvas) ((Canvas) settingsBack).repaint();
+                } else {
+                    showLibrary();
+                }
+            } else {
+                handleSettingsSelect(s.getSelected());
+            }
         }
     }
 
@@ -721,45 +811,9 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
         } else if (s == libMenu) {
             handleLibMenuSelect(idx);
         } else if (s == menu) {
-            String curUrl = reader.getUrl();
-            boolean isFav = curUrl != null && Store.isFavorite(curUrl);
-            switch (idx) {
-                case 0: display.setCurrent(reader); break;
-                case 1:
-                    if (curUrl != null) {
-                        Store.setFavorite(curUrl, !isFav);
-                        showMenu();
-                        menu.setSelected(1);
-                    }
-                    break;
-                case 2: showToc(); break;
-                case 3: showGoto(); break;
-                case 4: reader.cycleFont(); showMenu(); menu.setSelected(4); break;
-                case 5:
-                    int curUi = Store.getInt("ui_theme", 1);
-                    int nextUi = (curUi + 1) % 2;
-                    Store.putInt("ui_theme", nextUi);
-                    reader.repaint();
-                    showMenu();
-                    menu.setSelected(5);
-                    break;
-                case 6:
-                    reader.setTheme((reader.getTheme() + 1) % 3);
-                    showMenu();
-                    menu.setSelected(6);
-                    break;
-                case 7:
-                    L10n.toggleLang();
-                    cBack = new Command(L10n.t("Quay lại", "Back"), Command.BACK, 1);
-                    showMenu();
-                    menu.setSelected(7);
-                    break;
-                case 8: showLibraryTab(TAB_FAV); break;
-                case 9: showLibraryTab(TAB_ALL); break;
-                case 10: backScreen = menu; showHelp(); break;
-                case 11: quit(); break;
-                default: break;
-            }
+            handleMenuSelect(idx);
+        } else if (s == settingsScreen) {
+            handleSettingsSelect(idx);
         } else if (s == toc) {
             reader.gotoChapter(idx);
             display.setCurrent(reader);

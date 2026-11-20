@@ -85,20 +85,29 @@ public class CaptureShowcase {
 
         ListScreen menuDark = new ListScreen(null, "Menu");
         menuDark.add("Tiếp tục đọc", Ui.I_BOOK);
-        menuDark.add("☆ Thêm vào ưa thích", Ui.I_STAR);
         menuDark.add("Mục lục", Ui.I_PAGE);
         menuDark.add("Đi tới %", Ui.I_PAGE);
-        menuDark.add("Cỡ chữ: vừa", Ui.I_GEAR);
-        menuDark.add("Giao diện: tối", Ui.I_GEAR);
-        menuDark.add("Màu đọc: sáng", Ui.I_GEAR);
+        menuDark.add("☆ Thêm vào ưa thích", Ui.I_STAR);
         menuDark.add("Mục ưa thích", Ui.I_STAR);
         menuDark.add("Tất cả sách", Ui.I_BOOK);
-        menuDark.add("Hướng dẫn phím", Ui.I_GEAR);
+        menuDark.add("Cài đặt", Ui.I_GEAR);
+        menuDark.add("Hướng dẫn phím", Ui.I_PAGE);
+        menuDark.add("Giới thiệu", Ui.I_BOOK);
         menuDark.add("Thoát", Ui.I_GEAR);
-        menuDark.setSelected(5);
+        menuDark.setSelected(6);
         menuDark.setSoftKeys("Chọn", "Quay lại");
         dump(menuDark, new File(outDir, "menu-dark.png"));
         dump(menuDark, new File(outDir, "menu.png"));
+
+        ListScreen settingsDark = new ListScreen(null, "Cài đặt");
+        settingsDark.add("Giao diện: tối", Ui.I_GEAR);
+        settingsDark.add("Màu đọc: sáng", Ui.I_GEAR);
+        settingsDark.add("Cỡ chữ: vừa", Ui.I_GEAR);
+        settingsDark.add("Ngôn ngữ: Tiếng Việt", Ui.I_GEAR);
+        settingsDark.add("Đổi thư mục sách", Ui.I_FOLDER);
+        settingsDark.setSelected(0);
+        settingsDark.setSoftKeys("Chọn", "Quay lại");
+        dump(settingsDark, new File(outDir, "settings-dark.png"));
 
         // 2. Light UI (Opera Classic)
         Store.putInt("ui_theme", 0);
@@ -115,19 +124,28 @@ public class CaptureShowcase {
 
         ListScreen menuLight = new ListScreen(null, "Menu");
         menuLight.add("Tiếp tục đọc", Ui.I_BOOK);
-        menuLight.add("☆ Thêm vào ưa thích", Ui.I_STAR);
         menuLight.add("Mục lục", Ui.I_PAGE);
         menuLight.add("Đi tới %", Ui.I_PAGE);
-        menuLight.add("Cỡ chữ: vừa", Ui.I_GEAR);
-        menuLight.add("Giao diện: sáng", Ui.I_GEAR);
-        menuLight.add("Màu đọc: sáng", Ui.I_GEAR);
+        menuLight.add("☆ Thêm vào ưa thích", Ui.I_STAR);
         menuLight.add("Mục ưa thích", Ui.I_STAR);
         menuLight.add("Tất cả sách", Ui.I_BOOK);
-        menuLight.add("Hướng dẫn phím", Ui.I_GEAR);
+        menuLight.add("Cài đặt", Ui.I_GEAR);
+        menuLight.add("Hướng dẫn phím", Ui.I_PAGE);
+        menuLight.add("Giới thiệu", Ui.I_BOOK);
         menuLight.add("Thoát", Ui.I_GEAR);
-        menuLight.setSelected(5);
+        menuLight.setSelected(6);
         menuLight.setSoftKeys("Chọn", "Quay lại");
         dump(menuLight, new File(outDir, "menu-light.png"));
+
+        ListScreen settingsLight = new ListScreen(null, "Cài đặt");
+        settingsLight.add("Giao diện: sáng", Ui.I_GEAR);
+        settingsLight.add("Màu đọc: sáng", Ui.I_GEAR);
+        settingsLight.add("Cỡ chữ: vừa", Ui.I_GEAR);
+        settingsLight.add("Ngôn ngữ: Tiếng Việt", Ui.I_GEAR);
+        settingsLight.add("Đổi thư mục sách", Ui.I_FOLDER);
+        settingsLight.setSelected(0);
+        settingsLight.setSoftKeys("Chọn", "Quay lại");
+        dump(settingsLight, new File(outDir, "settings-light.png"));
 
         ReaderCanvas rcLight = new ReaderCanvas(null);
         rcLight.openBook("file:///E:/Books/truyen-kieu.epub", new SampleBook());

@@ -4,10 +4,10 @@
 
 ## Giao diện
 
-| Giao diện | Thư viện (Ưa thích) | Menu cài đặt | Đọc nền Sáng | Đọc nền Sepia | Đọc nền Tối |
-|:---:|:---:|:---:|:---:|:---:|:---:|
-| **Tối** | ![Thư viện Tối](docs/library-dark.png) | ![Menu Tối](docs/menu-dark.png) | ![Đọc Sáng](docs/reader-dark-ui-light.png) | ![Đọc Sepia](docs/reader-dark-ui-sepia.png) | ![Đọc Tối](docs/reader-dark-ui-dark.png) |
-| **Sáng** | ![Thư viện Sáng](docs/library-light.png) | ![Menu Sáng](docs/menu-light.png) | ![Đọc Sáng](docs/reader-light-ui-light.png) | ![Đọc Sepia](docs/reader-light-ui-sepia.png) | ![Đọc Tối](docs/reader-light-ui-dark.png) |
+| Giao diện | Thư viện (Ưa thích) | Menu tùy chọn | Cài đặt | Đọc nền Sáng | Đọc nền Sepia | Đọc nền Tối |
+|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| **Tối** | ![Thư viện Tối](docs/library-dark.png) | ![Menu Tối](docs/menu-dark.png) | ![Cài đặt Tối](docs/settings-dark.png) | ![Đọc Sáng](docs/reader-dark-ui-light.png) | ![Đọc Sepia](docs/reader-dark-ui-sepia.png) | ![Đọc Tối](docs/reader-dark-ui-dark.png) |
+| **Sáng** | ![Thư viện Sáng](docs/library-light.png) | ![Menu Sáng](docs/menu-light.png) | ![Cài đặt Sáng](docs/settings-light.png) | ![Đọc Sáng](docs/reader-light-ui-light.png) | ![Đọc Sepia](docs/reader-light-ui-sepia.png) | ![Đọc Tối](docs/reader-light-ui-dark.png) |
 
 ## Điểm nổi bật
 - **Đa ngôn ngữ (Tiếng Việt / English):** Tự động nhận diện ngôn ngữ máy (`microedition.locale`) hoặc chuyển đổi tức thì trong Menu cài đặt, tự động lưu cấu hình.
@@ -33,7 +33,7 @@
 | `7` / `9` | Chú thích trước / sau |
 | `*` (bấm nhanh / giữ + Lên/Xuống) | Đổi cỡ chữ (nhỏ, vừa, lớn) |
 | `#` | Đổi nhanh màu đọc (`sáng` → `tối` → `sepia`) |
-| Phím mềm trái (`Menu`) | Mở Menu tùy chọn (Mục lục, Đi tới %, Cỡ chữ, Giao diện, Màu đọc...) |
+| Phím mềm trái (`Menu`) | Mở Menu tùy chọn (Mục lục, Đi tới %, Cài đặt, Thoát...) |
 | Phím mềm phải | Mở nhanh Mục lục |
 
 ### Trong danh sách sách / Mục lục
@@ -43,7 +43,7 @@
 | `*` | Đánh dấu / Bỏ yêu thích cuốn sách đang chọn |
 | `0` | Xem tên đầy đủ của sách trong hộp thoại popup |
 | Cuộn ngang tự động (Marquee) | Tự cuộn tên sách dài khi dừng con trỏ |
-| Phím mềm trái (`Menu`) | Đổi thư mục sách, Giao diện, Màu đọc, Cỡ chữ... |
+| Phím mềm trái (`Menu`) | Đọc tiếp, Cài đặt (giao diện, ngôn ngữ, thư mục...), Thoát |
 
 ## Cài đặt & Sử dụng
 - File cài đặt: [dist/BookReader.jar](dist/BookReader.jar) (kèm [dist/BookReader.jad](dist/BookReader.jad)).
