@@ -132,8 +132,8 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
 
         String curUrl = reader.getUrl();
         boolean isFav = curUrl != null && Store.isFavorite(curUrl);
-        menu.add(isFav ? L10n.t("★ Bỏ ưa thích", "★ Remove favorite")
-                       : L10n.t("☆ Thêm vào ưa thích", "☆ Add to favorites"), Ui.I_STAR);
+        menu.add(isFav ? L10n.t("Bỏ yêu thích", "Remove from favorites")
+                       : L10n.t("Thêm vào yêu thích", "Add to favorites"), Ui.I_STAR);
         menuActions.addElement("fav");
 
         menu.add(L10n.t("Mục ưa thích", "Favorites tab"), Ui.I_STAR);

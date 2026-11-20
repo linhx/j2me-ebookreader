@@ -87,7 +87,7 @@ public class CaptureShowcase {
         menuDark.add("Tiếp tục đọc", Ui.I_BOOK);
         menuDark.add("Mục lục", Ui.I_PAGE);
         menuDark.add("Đi tới %", Ui.I_PAGE);
-        menuDark.add("☆ Thêm vào ưa thích", Ui.I_STAR);
+        menuDark.add("Thêm vào yêu thích", Ui.I_STAR);
         menuDark.add("Mục ưa thích", Ui.I_STAR);
         menuDark.add("Tất cả sách", Ui.I_BOOK);
         menuDark.add("Cài đặt", Ui.I_GEAR);
@@ -126,7 +126,7 @@ public class CaptureShowcase {
         menuLight.add("Tiếp tục đọc", Ui.I_BOOK);
         menuLight.add("Mục lục", Ui.I_PAGE);
         menuLight.add("Đi tới %", Ui.I_PAGE);
-        menuLight.add("☆ Thêm vào ưa thích", Ui.I_STAR);
+        menuLight.add("Thêm vào yêu thích", Ui.I_STAR);
         menuLight.add("Mục ưa thích", Ui.I_STAR);
         menuLight.add("Tất cả sách", Ui.I_BOOK);
         menuLight.add("Cài đặt", Ui.I_GEAR);
