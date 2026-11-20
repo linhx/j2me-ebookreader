@@ -267,6 +267,16 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
         display.setCurrent(f);
     }
 
+    private String getSelectedBookUrl() {
+        if (browser == null || chooseMode || curDir == null) return null;
+        int idx = browser.getSelected();
+        if (hasUpItem) idx--;
+        if (idx < 0 || idx >= entries.size()) return null;
+        String name = (String) entries.elementAt(idx);
+        if (name == null || name.endsWith("/") || name.charAt(0) == '\u0001') return null;
+        return curDir + name;
+    }
+
     public void showLibraryMenu() {
         libMenu = new ListScreen(this, "Menu");
         libMenuActions = new Vector();
@@ -282,6 +292,14 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
                 libMenu.add(L10n.t("Đọc tiếp: ", "Resume: ") + stripExt(n), Ui.I_BOOK);
                 libMenuActions.addElement("last");
             }
+        }
+
+        String selBookUrl = getSelectedBookUrl();
+        if (selBookUrl != null) {
+            boolean isFav = Store.isFavorite(selBookUrl);
+            libMenu.add(isFav ? L10n.t("Bỏ yêu thích", "Remove from favorites")
+                              : L10n.t("Thêm vào yêu thích", "Add to favorites"), Ui.I_STAR);
+            libMenuActions.addElement("fav");
         }
 
         libMenu.add(L10n.t("Cài đặt", "Settings"), Ui.I_GEAR);
@@ -308,6 +326,14 @@ public class ReaderMidlet extends MIDlet implements CommandListener, ListScreen.
         } else if ("last".equals(action)) {
             String lastUrl = Store.get("last", "");
             if (lastUrl != null && lastUrl.length() > 0) openFile(lastUrl);
+        } else if ("fav".equals(action)) {
+            String selBookUrl = getSelectedBookUrl();
+            if (selBookUrl != null) {
+                boolean isFav = Store.isFavorite(selBookUrl);
+                Store.setFavorite(selBookUrl, !isFav);
+                defaultTabPending = false;
+                showLibraryTab(libraryTab);
+            }
         } else if ("settings".equals(action)) {
             showSettings(libMenu);
         } else if ("help".equals(action)) {

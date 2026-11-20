@@ -43,7 +43,7 @@
 | `*` | Đánh dấu / Bỏ yêu thích cuốn sách đang chọn |
 | `0` | Xem tên đầy đủ của sách trong hộp thoại popup |
 | Cuộn ngang tự động (Marquee) | Tự cuộn tên sách dài khi dừng con trỏ |
-| Phím mềm trái (`Menu`) | Đọc tiếp, Cài đặt (giao diện, ngôn ngữ, thư mục...), Thoát |
+| Phím mềm trái (`Menu`) | Đọc tiếp, Thêm/Bỏ yêu thích sách, Cài đặt, Thoát |
 
 ## Cài đặt & Sử dụng
 - File cài đặt: [dist/BookReader.jar](dist/BookReader.jar) (kèm [dist/BookReader.jad](dist/BookReader.jad)).
