@@ -4,15 +4,10 @@
 
 ## Giao diện
 
-### Giao diện Tối (Opera Dark)
-| Thư viện (Ưa thích) | Menu cài đặt | Đọc nền Sáng (tách biệt) | Đọc nền Sepia | Đọc nền Tối |
-|:---:|:---:|:---:|:---:|:---:|
-| ![Thư viện Tối](docs/library-dark.png) | ![Menu Tối](docs/menu-dark.png) | ![Đọc Sáng](docs/reader-light.png) | ![Đọc Sepia](docs/reader-sepia.png) | ![Đọc Tối](docs/reader-dark.png) |
-
-### Giao diện Sáng (Opera Classic)
-| Thư viện Sáng | Menu Sáng | Đọc sách giao diện Sáng |
-|:---:|:---:|:---:|
-| ![Thư viện Sáng](docs/library-light.png) | ![Menu Sáng](docs/menu-light.png) | ![Đọc Sáng](docs/reader-light-ui.png) |
+| Giao diện | Thư viện (Ưa thích) | Menu cài đặt | Đọc nền Sáng | Đọc nền Sepia | Đọc nền Tối |
+|:---:|:---:|:---:|:---:|:---:|:---:|
+| **Tối** | ![Thư viện Tối](docs/library-dark.png) | ![Menu Tối](docs/menu-dark.png) | ![Đọc Sáng](docs/reader-dark-ui-light.png) | ![Đọc Sepia](docs/reader-dark-ui-sepia.png) | ![Đọc Tối](docs/reader-dark-ui-dark.png) |
+| **Sáng** | ![Thư viện Sáng](docs/library-light.png) | ![Menu Sáng](docs/menu-light.png) | ![Đọc Sáng](docs/reader-light-ui-light.png) | ![Đọc Sepia](docs/reader-light-ui-sepia.png) | ![Đọc Tối](docs/reader-light-ui-dark.png) |
 
 ## Điểm nổi bật
 - **Phong cách Opera Mini 4.4:** Thanh tiêu đề và phím mềm chuyển màu (gradient), thanh cuộn mảnh, vạch tiến độ đọc tinh tế.

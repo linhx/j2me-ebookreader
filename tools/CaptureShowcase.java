@@ -133,7 +133,12 @@ public class CaptureShowcase {
         rcLight.openBook("file:///E:/Books/truyen-kieu.epub", new SampleBook());
         Thread.sleep(300);
         rcLight.setTheme(0);
+        dump(rcLight, new File(outDir, "reader-light-ui-light.png"));
         dump(rcLight, new File(outDir, "reader-light-ui.png"));
+        rcLight.setTheme(2);
+        dump(rcLight, new File(outDir, "reader-light-ui-sepia.png"));
+        rcLight.setTheme(1);
+        dump(rcLight, new File(outDir, "reader-light-ui-dark.png"));
 
         // 3. Reader paper themes (Light, Sepia, Dark) on Dark UI
         Store.putInt("ui_theme", 1);
@@ -141,10 +146,13 @@ public class CaptureShowcase {
         rc.openBook("file:///E:/Books/truyen-kieu.epub", new SampleBook());
         Thread.sleep(300);
         rc.setTheme(0);
+        dump(rc, new File(outDir, "reader-dark-ui-light.png"));
         dump(rc, new File(outDir, "reader-light.png"));
         rc.setTheme(2);
+        dump(rc, new File(outDir, "reader-dark-ui-sepia.png"));
         dump(rc, new File(outDir, "reader-sepia.png"));
         rc.setTheme(1);
+        dump(rc, new File(outDir, "reader-dark-ui-dark.png"));
         dump(rc, new File(outDir, "reader-dark.png"));
 
         System.exit(0);
