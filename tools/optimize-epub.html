@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="vi"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#1c1c1c"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.png"><link rel="apple-touch-icon" href="icon.png">
 <title>Tối ưu EPUB cho Nokia C2-01</title>
 <style>
 body{font-family:sans-serif;max-width:520px;margin:0 auto;padding:16px;background:#1c1c1c;color:#ddd}
@@ -43,7 +44,7 @@ async function shrink(data,name,o){
   var nw=Math.max(1,Math.round(w*s)),nh=Math.max(1,Math.round(h*s));
   var c=document.createElement('canvas');c.width=nw;c.height=nh;
   var x=c.getContext('2d');
-  var png=lower.endsWith('.png');
+  var png=!/\.jpe?g$/.test(lower);
   if(!png){x.fillStyle='#fff';x.fillRect(0,0,nw,nh)}
   x.imageSmoothingEnabled=true;x.imageSmoothingQuality='high';x.drawImage(bmp,0,0,nw,nh);
   if(bmp.close)bmp.close();
@@ -85,4 +86,5 @@ $('go').onclick=async function(){
   }catch(e){log('Lỗi: '+e)}
   $('go').disabled=false;
 };
+if('serviceWorker' in navigator&&location.protocol.indexOf('http')==0)navigator.serviceWorker.register('sw.js');
 </script></body></html>
