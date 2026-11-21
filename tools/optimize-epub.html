@@ -44,16 +44,19 @@ async function shrink(data,name,o){
   var nw=Math.max(1,Math.round(w*s)),nh=Math.max(1,Math.round(h*s));
   var c=document.createElement('canvas');c.width=nw;c.height=nh;
   var x=c.getContext('2d');
-  var png=!/\.jpe?g$/.test(lower);
+  var isJpg=/\.jpe?g$/.test(lower),isPng=/\.png$/.test(lower),alpha=false;
+  x.imageSmoothingEnabled=true;x.imageSmoothingQuality='high';
+  if(!isJpg){x.drawImage(bmp,0,0,nw,nh);var ad=x.getImageData(0,0,nw,nh).data;for(var k=3;k<ad.length;k+=4){if(ad[k]<255){alpha=true;break}}x.clearRect(0,0,nw,nh)}
+  var png=isPng||(!isJpg&&alpha);
   if(!png){x.fillStyle='#fff';x.fillRect(0,0,nw,nh)}
-  x.imageSmoothingEnabled=true;x.imageSmoothingQuality='high';x.drawImage(bmp,0,0,nw,nh);
+  x.drawImage(bmp,0,0,nw,nh);
   if(bmp.close)bmp.close();
   if(o.gray){var d=x.getImageData(0,0,nw,nh),p=d.data;for(var i=0;i<p.length;i+=4){var l=(p[i]*299+p[i+1]*587+p[i+2]*114)/1000;p[i]=p[i+1]=p[i+2]=l}x.putImageData(d,0,0)}
   var out=await enc(c,png?'image/png':'image/jpeg',o.q/100);
   c.width=c.height=0;
   if(!out)return null;
   var buf=await out.arrayBuffer();
-  return {buf:buf,resized:need};
+  return {buf:buf,resized:need,ext:png?'png':'jpg',convert:!isJpg&&!isPng};
 }
 $('go').onclick=async function(){
   var file=$('f').files[0];if(!file){alert('Chọn file EPUB trước');return}
@@ -65,18 +68,41 @@ $('go').onclick=async function(){
     var imgs=0,resized=0,n=0;
     // mimetype first and stored
     names.sort(function(a,b){return a==='mimetype'?-1:b==='mimetype'?1:0});
+    var isImg=function(n){return /\.(jpe?g|png|gif|bmp|webp)$/.test(n.toLowerCase())};
+    var used={};names.forEach(function(n){used[n.toLowerCase()]=1});
+    var renames={},rest=[],total=names.length,done=0;
     for(var i=0;i<names.length;i++){
-      var name=names[i],data=await zin.file(name).async('uint8array'),lower=name.toLowerCase();
-      pr.value=(i+1)/names.length;
+      var name=names[i],data=await zin.file(name).async('uint8array');
+      pr.value=(++done)/total;
       if(name==='mimetype'){zout.file(name,data,{compression:'STORE'});continue}
-      if(/\.(jpe?g|png|gif|bmp|webp)$/.test(lower)){
-        imgs++;
-        var r=await shrink(data,name,o);
-        if(r&&(r.resized||r.buf.byteLength<data.length)){data=new Uint8Array(r.buf);if(r.resized)resized++}
-        else if(!r)log('Bỏ qua ảnh lỗi: '+name);
-      }
-      zout.file(name,data,{compression:'DEFLATE',compressionOptions:{level:9}});
+      if(!isImg(name)){rest.push([name,data]);continue}
+      imgs++;
+      var outName=name,r=await shrink(data,name,o);
+      if(!r){log('Bỏ qua ảnh lỗi: '+name)}
+      else if(r.convert){
+        var nn=name.replace(/\.[^.\/]+$/,'.'+r.ext);
+        if(used[nn.toLowerCase()]){var k2=1;while(used[nn.replace(/\.[^.\/]+$/,'_'+k2+'.'+r.ext).toLowerCase()])k2++;nn=nn.replace(/\.[^.\/]+$/,'_'+k2+'.'+r.ext)}
+        used[nn.toLowerCase()]=1;renames[name]=nn;outName=nn;data=new Uint8Array(r.buf);if(r.resized)resized++;
+      }else if(r.resized||r.buf.byteLength<data.length){data=new Uint8Array(r.buf);if(r.resized)resized++}
+      zout.file(outName,data,{compression:'DEFLATE',compressionOptions:{level:9}});
     }
+    // rewrite references in text files for renamed images
+    var mt={png:'image/png',jpg:'image/jpeg'},rkeys=Object.keys(renames),textRe=/\.(opf|x?html?|css|ncx|xml|svg)$/i,fixed=0;
+    for(var j=0;j<rest.length;j++){
+      var nm=rest[j][0],bytes=rest[j][1];
+      if(rkeys.length&&textRe.test(nm)){
+        var txt=new TextDecoder('utf-8').decode(bytes),orig=txt;
+        rkeys.forEach(function(oldp){
+          var ob=oldp.split('/').pop(),nb=renames[oldp].split('/').pop(),ext=nb.split('.').pop();
+          var esc=ob.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+          txt=txt.replace(new RegExp('<item\\b[^>]*'+esc+'[^>]*>','g'),function(t){return t.replace(new RegExp(esc,'g'),nb).replace(/media-type\s*=\s*"[^"]*"/,'media-type="'+mt[ext]+'"')});
+          txt=txt.split(ob).join(nb);
+        });
+        if(txt!==orig){bytes=new TextEncoder().encode(txt);fixed++}
+      }
+      zout.file(nm,bytes,{compression:'DEFLATE',compressionOptions:{level:9}});
+    }
+    if(rkeys.length)log('Đã đổi định dạng '+rkeys.length+' ảnh (GIF/BMP/WebP -> PNG/JPEG), sửa '+fixed+' file tham chiếu');
     log('Đang nén file...');
     var res=await zout.generateAsync({type:'blob',mimeType:'application/epub+zip'});
     var base=file.name.replace(/\.epub$/i,'')+'_c201.epub';
