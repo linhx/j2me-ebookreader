@@ -59,3 +59,5 @@ Tự động nén ảnh trong file EPUB về đúng chuẩn màn hình `232x280`
 ```bash
 ./tools/optimize-epub.py "/duong/dan/sach.epub"
 ```
+
+**Ngay trên điện thoại (không cần máy tính):** chép [tools/optimize-epub.html](tools/optimize-epub.html) vào điện thoại Android, mở bằng Chrome, chọn file EPUB → bấm *Tối ưu* → tải về file `*_c201.epub`. Chạy offline hoàn toàn, file không bị gửi đi đâu. (Có thể đưa lên GitHub Pages để mở bằng đường link.)
