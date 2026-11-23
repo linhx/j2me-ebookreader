@@ -14,6 +14,7 @@ public class ListScreen extends Canvas {
 
     private final Listener listener;
     private String title = "";
+    private String lastClock = "";
     private String left, right;
     private String loadingMsg;
     private String[] tabs = null;
@@ -105,6 +106,8 @@ public class ListScreen extends Canvas {
                         break;
                     }
                     if (!running) break;
+                    String ck = Ui.clock();
+                    if (!ck.equals(lastClock)) { lastClock = ck; repaint(); }
                     if (labels.size() == 0 || sel < 0 || sel >= labels.size() || showPreview) continue;
                     String text = (String) labels.elementAt(sel);
                     int tw = bold.stringWidth(text);

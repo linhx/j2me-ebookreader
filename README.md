@@ -15,6 +15,7 @@
 - **Tách biệt Giao diện & Màu đọc:** Tùy chọn độc lập giữa giao diện ứng dụng (`sáng` / `tối`) và màu trang giấy đọc (`sáng` / `tối` / `sepia`). Cho phép đọc chữ nền sáng trên giao diện tối.
 - **Quản lý Thư viện:** Chia 2 tab *Ưa thích* và *Tất cả sách* (phím `*` để thêm/bỏ yêu thích, tự nhớ thư mục sách, menu cài đặt gọn gàng).
 - **Hỗ trợ Chú thích (Footnote):** Phím `7`/`9` để duyệt chú thích, `OK` để mở hộp thoại đọc nội dung chú thích (căn đều 2 lề, cuộn mượt).
+- **Lịch sử vị trí nhảy:** Lưu 15 vị trí trước mỗi lần nhảy (mục lục, % tiến độ, phím `1`/`3` đổi chương). Giữ `*` rồi bấm `1` để quay lại, `3` để tiến tới.
 - **Trình bày văn bản chuẩn mực:** Căn đều 2 bên (justify), thụt đầu dòng, phân cấp tiêu đề (`h1`–`h6`), chú thích ảnh in nghiêng.
 - **Chống tràn RAM tuyệt đối (Anti-OOM cho heap ~2 MB):**
   - Giải nén luồng streaming DEFLATE với cửa sổ cố định 32 KB.

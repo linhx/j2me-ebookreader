@@ -15,6 +15,10 @@ public class ReaderCanvas extends Canvas {
     private boolean hasMorePart = false;
     private int nextPartOff = 0;
     private final int[] partHistory = new int[32];
+    private static final int HIST_MAX = 15;
+    private final java.util.Vector jumpHist = new java.util.Vector();
+    private int jumpIdx = -1;
+    private int[] anchor;
     private int partIdx = 0;
 
     private String text = "";
@@ -126,6 +130,8 @@ public class ReaderCanvas extends Canvas {
             } catch (Exception e) { ch = 0; pOff = 0; off = 0; pIdx = 0; }
         }
         if (ch < 0 || ch >= b.count()) { ch = 0; pOff = 0; off = 0; pIdx = 0; }
+        jumpHist.removeAllElements();
+        jumpIdx = -1;
         partHistory[0] = 0;
         if (pOff > 0) {
             partIdx = Math.max(1, pIdx);
@@ -175,6 +181,7 @@ public class ReaderCanvas extends Canvas {
                     else if (mode == END || mode == PART_END) top = lastTop();
                     else top = lineAt(off);
                     busy = false;
+                    anchor = snapshot();
                 } catch (Throwable e) {
                     if (g != gen) return;
                     busy = false;
@@ -709,6 +716,12 @@ public class ReaderCanvas extends Canvas {
 
     /** Performs one synchronous step while a directional key is held. Returns false if boundary reached. */
     private boolean stepHold(int code) {
+        boolean r = stepHold0(code);
+        if (r) moved();
+        return r;
+    }
+
+    private boolean stepHold0(int code) {
         if (busy || book == null) return false;
         int a = navAction(code);
         if (a == UP) {
@@ -763,8 +776,13 @@ public class ReaderCanvas extends Canvas {
         if (code == -7 || code == -22) { midlet.showToc(); return; }
         if (busy || book == null) return;
         int a = navAction(code);
-        if (code == KEY_NUM1) { gotoChapter(chapter - 1, START); return; }
-        if (code == KEY_NUM3) { gotoChapter(chapter + 1, START); return; }
+        if (starHeld && (code == KEY_NUM1 || code == KEY_NUM3)) {
+            starUsed = true;
+            jumpBack(code == KEY_NUM1 ? -1 : 1);
+            return;
+        }
+        if (code == KEY_NUM1) { recordJump(); gotoChapter(chapter - 1, START); return; }
+        if (code == KEY_NUM3) { recordJump(); gotoChapter(chapter + 1, START); return; }
         if (code == KEY_NUM7) { navNote(-1); return; }
         if (code == KEY_NUM9) { navNote(1); return; }
         if (code == KEY_STAR) { starHeld = true; return; }
@@ -982,6 +1000,7 @@ public class ReaderCanvas extends Canvas {
         if (nt < 0) nt = 0;
         if (nt > max) nt = max;
         top = nt;
+        moved();
         repaint();
     }
 
@@ -998,6 +1017,7 @@ public class ReaderCanvas extends Canvas {
                 }
             } else {
                 top = top + cnt;
+                moved();
                 repaint();
             }
         } else {
@@ -1011,6 +1031,7 @@ public class ReaderCanvas extends Canvas {
                 }
             } else {
                 top = prevPageTop(top);
+                moved();
                 repaint();
             }
         }
@@ -1023,12 +1044,88 @@ public class ReaderCanvas extends Canvas {
         load(ch, 0, mode, 0);
     }
 
+    private int[] snapshot() {
+        if (book == null || busy || nLines <= 0) return null;
+        return new int[] { chapter, partOff, ls[Math.min(top, nLines - 1)], partIdx };
+    }
+
+    /** Remembers the current position before a long jump (TOC, percent, chapter). */
+    private void recordJump() {
+        pushEntry(snapshot());
+    }
+
+    /** After a scroll/page move: store the old spot when we drifted far from it. */
+    private void moved() {
+        int[] c = snapshot();
+        if (c == null) return;
+        if (anchor == null || anchor[0] != c[0] || anchor[1] != c[1]) { anchor = c; return; }
+        int d = Math.abs(lineAt(c[2]) - lineAt(anchor[2]));
+        if (d >= 3 * Math.max(1, fits(top))) {
+            pushEntry(anchor);
+            anchor = c;
+        }
+    }
+
+    private void pushEntry(int[] c) {
+        if (c == null) return;
+        if (jumpIdx >= 0) {
+            while (jumpHist.size() > jumpIdx) jumpHist.removeElementAt(jumpHist.size() - 1);
+            jumpIdx = -1;
+        }
+        anchor = null;
+        if (jumpHist.size() > 0) {
+            int[] l = (int[]) jumpHist.lastElement();
+            if (l[0] == c[0] && l[1] == c[1] && l[2] == c[2]) return;
+        }
+        jumpHist.addElement(c);
+        while (jumpHist.size() > HIST_MAX) jumpHist.removeElementAt(0);
+    }
+
+    /** dir -1 = back to previous position, +1 = forward. */
+    private void jumpBack(int dir) {
+        int[] c = snapshot();
+        if (c == null) return;
+        if (jumpIdx < 0) {
+            if (dir > 0 || jumpHist.size() == 0) {
+                showToast(L10n.t("Không có lịch sử nhảy", "No jump history"));
+                return;
+            }
+            jumpHist.addElement(c);
+            while (jumpHist.size() > HIST_MAX + 1) jumpHist.removeElementAt(0);
+            jumpIdx = jumpHist.size() - 1;
+        } else {
+            jumpHist.setElementAt(c, jumpIdx);
+        }
+        int ni = jumpIdx + dir;
+        if (ni < 0 || ni >= jumpHist.size()) {
+            showToast(dir < 0 ? L10n.t("Đã tới vị trí cũ nhất", "Oldest position")
+                              : L10n.t("Đã tới vị trí mới nhất", "Newest position"));
+            return;
+        }
+        int[] e = (int[]) jumpHist.elementAt(ni);
+        if (e[0] < 0 || e[0] >= book.count()) return;
+        jumpIdx = ni;
+        showToast((dir < 0 ? L10n.t("Quay lại ", "Back ") : L10n.t("Tiến tới ", "Forward "))
+                + (jumpIdx + 1) + "/" + jumpHist.size());
+        if (e[1] > 0) {
+            partIdx = Math.max(1, e[3]);
+            if (partIdx < partHistory.length) partHistory[partIdx] = e[1];
+        } else {
+            partIdx = 0;
+        }
+        partHistory[0] = 0;
+        anchor = null;
+        load(e[0], e[1], OFFSET, e[2]);
+    }
+
     public void gotoChapter(int ch) {
+        recordJump();
         gotoChapter(ch, START);
     }
 
     public void gotoPercent(int pct) {
         if (book == null) return;
+        recordJump();
         double pos = pct * book.count() / 100.0;
         int ch = (int) pos;
         if (ch >= book.count()) { ch = book.count() - 1; pos = ch; }
@@ -1082,6 +1179,7 @@ public class ReaderCanvas extends Canvas {
                     noteScroll = 0;
                     top = Math.min(lastTop(), (int) (fracInPart * nLines));
                     busy = false;
+                    anchor = snapshot();
                 } catch (Throwable e) {
                     if (g != gen) return;
                     busy = false;

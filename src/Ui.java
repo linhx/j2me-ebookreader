@@ -29,6 +29,13 @@ public class Ui {
         titleBar(g, w, h, title, right, false);
     }
 
+    /** Current local time as HH:MM. */
+    public static String clock() {
+        java.util.Calendar c = java.util.Calendar.getInstance();
+        int hh = c.get(java.util.Calendar.HOUR_OF_DAY), mm = c.get(java.util.Calendar.MINUTE);
+        return (hh < 10 ? "0" : "") + hh + ":" + (mm < 10 ? "0" : "") + mm;
+    }
+
     public static void titleBar(Graphics g, int w, int h, String title, String right, boolean dark) {
         if (dark) {
             vgrad(g, 0, 0, w, h, 0x2A2A2A, 0x1A1A1A);
@@ -45,13 +52,16 @@ public class Ui {
         }
         Font f = Font.getFont(Font.FACE_PROPORTIONAL, Font.STYLE_BOLD, Font.SIZE_SMALL);
         g.setFont(f);
+        String clk = clock();
+        int cw = f.stringWidth(clk) + 6;
         int rw = right == null ? 0 : f.stringWidth(right) + 6;
         g.setColor(dark ? 0x0A0A0A : 0x5A0A0D);
-        String t = fit(f, title, w - 8 - rw);
+        String t = fit(f, title, w / 2 - cw / 2 - 8);
         int ty = (h - f.getHeight()) / 2;
         g.drawString(t, 5, ty + 1, Graphics.TOP | Graphics.LEFT);
         g.setColor(0xFFFFFF);
         g.drawString(t, 4, ty, Graphics.TOP | Graphics.LEFT);
+        g.drawString(clk, w / 2, ty, Graphics.TOP | Graphics.HCENTER);
         if (right != null) g.drawString(right, w - 4, ty, Graphics.TOP | Graphics.RIGHT);
     }
 
